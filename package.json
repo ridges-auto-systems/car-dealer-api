@@ -1,0 +1,84 @@
+{
+  "name": "car-dealer-api",
+  "version": "1.0.0",
+  "description": "Backend API service for Premier Auto Systems",
+  "main": "src/app.js",
+  "engines": {
+    "node": ">=22.16.0",
+    "npm": ">=10.9.2"
+  },
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "build": "npm run lint && npm run test",
+    "test": "jest",
+    "test:unit": "jest --testPathPattern=tests/unit",
+    "test:integration": "jest --testPathPattern=tests/integration",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/ tests/ --ext .js",
+    "lint:fix": "eslint src/ tests/ --ext .js --fix",
+    "format": "prettier --write \"src/**/*.js\" \"tests/**/*.js\"",
+    "format:check": "prettier --check \"src/**/*.js\" \"tests/**/*.js\"",
+    "db:migrate": "npx prisma migrate dev",
+    "db:deploy": "npx prisma migrate deploy",
+    "db:seed": "node prisma/seed.js",
+    "db:studio": "npx prisma studio",
+    "db:generate": "npx prisma generate",
+    "docs:generate": "swagger-jsdoc -d swagger.config.js src/routes/*.js -o docs/api/swagger.json",
+    "security:audit": "npm audit --audit-level=moderate",
+    "prepare": "husky install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ridges-auto-systems/car-dealer-api.git"
+  },
+  "keywords": [
+    "automotive",
+    "dealership",
+    "api",
+    "nodejs",
+    "express"
+  ],
+  "author": "Ridges Auto Systems",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "prisma": "^5.8.1",
+    "@prisma/client": "^5.8.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "multer": "^1.4.4",
+    "cloudinary": "^1.41.3",
+    "nodemailer": "^6.9.8",
+    "winston": "^3.11.0",
+    "compression": "^1.7.4",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4",
+    "eslint": "^8.56.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.29.1",
+    "prettier": "^3.1.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "prisma": {
+    "seed": "prisma/seed.js"
+  }
+}
