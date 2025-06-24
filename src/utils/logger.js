@@ -1,66 +1,42 @@
 /* eslint-disable comma-dangle */
-/* eslint-disable implicit-arrow-linebreak */
 const winston = require('winston');
 const path = require('path');
-
-// Ensure logs directory exists
 const fs = require('fs');
 
+// Ensure logs directory exists
 const logsDir = path.join(process.cwd(), 'logs');
 if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
 }
 
-// Define log levels
-const levels = {
-  error: 0,
-  warn: 1,
-  info: 2,
-  http: 3,
-  debug: 4,
-};
+// Custom format for Rides Automotors
+const ridesAutomotorsFormat = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.errors({ stack: true }),
+  winston.format.printf((info) => {
+    const company = info.company ? `[${info.company}] ` : '';
+    return `${info.timestamp} ${info.level}: ${company}${info.message}`;
+  })
+);
 
-// Define colors for each level
-const colors = {
-  error: 'red',
-  warn: 'yellow',
-  info: 'green',
-  http: 'magenta',
-  debug: 'white',
-};
-
-// Tell winston about colors
-winston.addColors(colors);
-
-// Create the logger
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
-  levels,
-  format: winston.format.combine(
-    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-    winston.format.errors({ stack: true }),
-    winston.format.printf(
-      (info) =>
-        `${info.timestamp} ${info.level}: ${info.message}${info.stack ? `\n${info.stack}` : ''}`
-    )
-  ),
+  format: ridesAutomotorsFormat,
+  defaultMeta: { company: 'Rides Automotors' },
   transports: [
-    // Console logging
+    // Console logging with colors
     new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize({ all: true }),
-        winston.format.simple()
-      ),
+      format: winston.format.combine(winston.format.colorize(), ridesAutomotorsFormat),
     }),
 
-    // File logging for errors
+    // Error log file
     new winston.transports.File({
       filename: path.join(logsDir, 'error.log'),
       level: 'error',
       format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
     }),
 
-    // File logging for all logs
+    // Combined log file
     new winston.transports.File({
       filename: path.join(logsDir, 'combined.log'),
       format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
