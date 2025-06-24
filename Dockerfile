@@ -1,4 +1,4 @@
-# Multi-stage build for smaller production image
+# Dockerfile
 FROM node:18-alpine AS base
 
 # Install dependencies only when needed
@@ -6,7 +6,6 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
@@ -18,8 +17,6 @@ RUN npm ci
 
 COPY . .
 COPY prisma ./prisma/
-
-# Generate Prisma client
 RUN npx prisma generate
 
 # Production image
