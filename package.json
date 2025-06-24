@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Backend API service for Premier Auto Systems",
   "main": "src/app.js",
+  "prisma": {
+    "seed": "prisma/seed.js"
+  },
   "engines": {
     "node": ">=22.16.0",
     "npm": ">=10.9.2"
@@ -76,8 +79,5 @@
       "eslint --fix",
       "prettier --write"
     ]
-  },
-  "prisma": {
-    "seed": "prisma/seed.js"
   }
 }
