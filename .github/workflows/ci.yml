@@ -92,7 +92,7 @@ jobs:
     - name: 🗃️ Setup test database
       run: |
         npx prisma migrate deploy
-        npx run db:seed
+        npm run db:seed
       env:
         DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/car_dealer_test
         
