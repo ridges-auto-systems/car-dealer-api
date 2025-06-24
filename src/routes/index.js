@@ -1,30 +1,151 @@
 const express = require('express');
+const { PrismaClient } = require('@prisma/client');
+const logger = require('../utils/logger');
 
 const vehicleRoutes = require('./vehicle');
 const leadRoutes = require('./leads');
 const authRoutes = require('./auth');
 
 const router = express.Router();
+const prisma = new PrismaClient();
 
-// Route handlers
-router.use('/auth', authRoutes);
+// ============================================================================
+// MAIN API ROUTES
+// ============================================================================
 router.use('/vehicles', vehicleRoutes);
 router.use('/leads', leadRoutes);
+router.use('/auth', authRoutes);
 
-// API info endpoint
-router.get('/', (req, res) => {
+// ============================================================================
+// API INFORMATION ENDPOINT
+// ============================================================================
+router.get('/', async (req, res) => {
+  try {
+    // Get real-time stats for API info
+    const [vehicleCount, leadCount] = await Promise.all([
+      prisma.vehicle.count({ where: { status: 'AVAILABLE', isActive: true } }),
+      prisma.lead.count({ where: { isActive: true } }),
+    ]);
+
+    res.json({
+      message: 'Rides Automotors API',
+      version: '1.0.0',
+      company: 'Rides Automotors',
+      tagline: 'Connecting customers with quality vehicles',
+      status: 'Active',
+      database: 'Connected',
+      currentInventory: {
+        availableVehicles: vehicleCount,
+        activeLeads: leadCount,
+      },
+      endpoints: {
+        vehicles: {
+          list: 'GET /api/vehicles',
+          search: 'GET /api/vehicles?search=term',
+          details: 'GET /api/vehicles/:id',
+          featured: 'GET /api/vehicles/featured/list',
+        },
+        leads: {
+          create: 'POST /api/leads',
+          list: 'GET /api/leads (auth required)',
+        },
+        auth: {
+          login: 'POST /api/auth/login',
+          register: 'POST /api/auth/register',
+        },
+        system: {
+          health: 'GET /health',
+          stats: 'GET /api/stats',
+        },
+      },
+      features: [
+        'Advanced Vehicle Search & Filtering',
+        'Lead Capture & Management',
+        'Customer Relationship Management',
+        'Real-time Inventory Updates',
+        'Professional Analytics Dashboard',
+      ],
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Error fetching API info:', error);
+    res.json({
+      message: 'Rides Automotors API',
+      version: '1.0.0',
+      company: 'Rides Automotors',
+      status: 'Active',
+      database: 'Error',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// ============================================================================
+// COMPANY INFORMATION ENDPOINT
+// ============================================================================
+router.get('/company', (req, res) => {
   res.json({
-    message: 'Rides Automotors API',
-    version: '1.0.0',
-    company: 'Rides Automotors',
+    name: process.env.COMPANY_NAME || 'Rides Automotors',
     tagline: 'Connecting customers with quality vehicles',
-    endpoints: {
-      auth: '/api/auth',
-      vehicles: '/api/vehicles',
-      leads: '/api/leads',
-      documentation: '/api/docs',
+    description:
+      'Modern automotive dealership focused on providing exceptional customer experiences through technology-driven solutions.',
+    established: '2024',
+    specialties: [
+      'Quality Used Vehicles',
+      'Certified Pre-Owned Programs',
+      'Financing Solutions',
+      'Trade-in Services',
+      'Vehicle Inspections',
+      'Extended Warranties',
+    ],
+    services: [
+      'Vehicle Sales',
+      'Trade-in Evaluations',
+      'Financing Assistance',
+      'Vehicle History Reports',
+      'Multi-point Inspections',
+      'Delivery Services',
+    ],
+    features: [
+      'Advanced Vehicle Search',
+      'Virtual Vehicle Tours',
+      'Online Financing Applications',
+      'Real-time Inventory Updates',
+      'Mobile-friendly Experience',
+      'Professional Customer Support',
+    ],
+    contact: {
+      address: process.env.DEALERSHIP_ADDRESS || '123 Auto Plaza Drive, Your City, State 12345',
+      phone: process.env.DEALERSHIP_PHONE || '(555) 123-4567',
+      email: process.env.COMPANY_EMAIL || 'info@ridesautomotors.com',
+      website: process.env.FRONTEND_URL || 'https://ridesautomotors.com',
+      salesEmail: 'sales@ridesautomotors.com',
+      supportEmail: 'support@ridesautomotors.com',
     },
-    status: 'Active',
+    hours: {
+      monday: process.env.BUSINESS_HOURS_MON_FRI || '9:00 AM - 8:00 PM',
+      tuesday: process.env.BUSINESS_HOURS_MON_FRI || '9:00 AM - 8:00 PM',
+      wednesday: process.env.BUSINESS_HOURS_MON_FRI || '9:00 AM - 8:00 PM',
+      thursday: process.env.BUSINESS_HOURS_MON_FRI || '9:00 AM - 8:00 PM',
+      friday: process.env.BUSINESS_HOURS_MON_FRI || '9:00 AM - 8:00 PM',
+      saturday: process.env.BUSINESS_HOURS_SAT || '9:00 AM - 6:00 PM',
+      sunday: process.env.BUSINESS_HOURS_SUN || '11:00 AM - 5:00 PM',
+    },
+    licenses: {
+      dealerLicense: process.env.DEALERSHIP_LICENSE || 'Dealer License #12345',
+      businessLicense: 'Business License #67890',
+    },
+    certifications: [
+      'Better Business Bureau Accredited',
+      'AutoCheck Certified Dealer',
+      'Customer Satisfaction Award Winner',
+    ],
+    socialMedia: {
+      facebook: 'https://facebook.com/ridesautomotors',
+      instagram: 'https://instagram.com/ridesautomotors',
+      twitter: 'https://twitter.com/ridesautomotors',
+      youtube: 'https://youtube.com/ridesautomotors',
+    },
     timestamp: new Date().toISOString(),
   });
 });
