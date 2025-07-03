@@ -55,7 +55,7 @@ CREATE TABLE "users" (
 -- CreateTable
 CREATE TABLE "vehicles" (
     "id" TEXT NOT NULL,
-    "vin" TEXT NOT NULL,
+    "vin" TEXT,
     "stockNumber" TEXT,
     "make" TEXT NOT NULL,
     "model" TEXT NOT NULL,
@@ -259,7 +259,7 @@ CREATE TABLE "vehicle_history" (
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "vehicles_vin_key" ON "vehicles"("vin");
+ALTER TABLE "vehicles" ALTER COLUMN "vin" DROP NOT NULL;
 
 -- CreateIndex
 CREATE UNIQUE INDEX "vehicles_stockNumber_key" ON "vehicles"("stockNumber");
