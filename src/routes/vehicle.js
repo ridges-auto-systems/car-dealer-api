@@ -446,10 +446,7 @@ router.get('/featured/list', async (req, res) => {
 router.post(
   '/',
   [
-    body('vin')
-      .optional()
-      .isLength({ min: 17, max: 17 })
-      .withMessage('VIN must be exactly 17 characters'),
+    body('vin').optional().isLength({ min: 17, max: 17 }),
     body('make').notEmpty().withMessage('Make is required'),
     body('model').notEmpty().withMessage('Model is required'),
     body('year')
@@ -517,21 +514,23 @@ router.post(
       } = req.body;
 
       // Check if VIN already exists
-      const existingVehicle = await prisma.vehicle.findUnique({
-        where: { vin },
-        select: { id: true, vin: true },
-      });
-
-      if (existingVehicle) {
-        return res.status(409).json({
-          success: false,
-          error: 'Vehicle with this VIN already exists',
-          company: 'Rides Automotors',
-          conflictingVehicle: {
-            id: existingVehicle.id,
-            vin: existingVehicle.vin,
-          },
+      if (vin && vin.trim()) {
+        const existingVehicle = await prisma.vehicle.findUnique({
+          where: { vin: vin.toUpperCase() },
+          select: { id: true, vin: true },
         });
+
+        if (existingVehicle) {
+          return res.status(409).json({
+            success: false,
+            error: 'Vehicle with this VIN already exists',
+            company: 'Rides Automotors',
+            conflictingVehicle: {
+              id: existingVehicle.id,
+              vin: existingVehicle.vin,
+            },
+          });
+        }
       }
 
       // Generate stock number if not provided
@@ -542,7 +541,7 @@ router.post(
       // Create the vehicle
       const vehicle = await prisma.vehicle.create({
         data: {
-          vin: vin.toUpperCase(),
+          ...(vin ? { vin: vin.toUpperCase() } : {}),
           stockNumber: finalStockNumber,
           make: make.trim(),
           model: model.trim(),
@@ -659,10 +658,7 @@ router.post(
 router.put(
   '/:id',
   [
-    body('vin')
-      .optional()
-      .isLength({ min: 17, max: 17 })
-      .withMessage('VIN must be exactly 17 characters'),
+    body('vin').optional().isLength({ min: 17, max: 17 }),
     body('make').optional().notEmpty().withMessage('Make cannot be empty'),
     body('model').optional().notEmpty().withMessage('Model cannot be empty'),
     body('year')

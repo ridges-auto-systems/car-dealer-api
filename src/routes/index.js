@@ -5,6 +5,7 @@ const logger = require('../utils/logger');
 const vehicleRoutes = require('./vehicle');
 const leadRoutes = require('./leads');
 const authRoutes = require('./auth');
+const userRoutes = require('./users');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -15,6 +16,7 @@ const prisma = new PrismaClient();
 router.use('/vehicles', vehicleRoutes);
 router.use('/leads', leadRoutes);
 router.use('/auth', authRoutes);
+router.use('/users', userRoutes);
 
 // ============================================================================
 // API INFORMATION ENDPOINT
@@ -22,9 +24,10 @@ router.use('/auth', authRoutes);
 router.get('/', async (req, res) => {
   try {
     // Get real-time stats for API info
-    const [vehicleCount, leadCount] = await Promise.all([
+    const [vehicleCount, leadCount, userCount] = await Promise.all([
       prisma.vehicle.count({ where: { status: 'AVAILABLE', isActive: true } }),
       prisma.lead.count({ where: { isActive: true } }),
+      prisma.user.count({ where: { isActive: true } }),
     ]);
 
     res.json({
@@ -37,6 +40,7 @@ router.get('/', async (req, res) => {
       currentInventory: {
         availableVehicles: vehicleCount,
         activeLeads: leadCount,
+        activeUsers: userCount,
       },
       endpoints: {
         vehicles: {
@@ -48,6 +52,15 @@ router.get('/', async (req, res) => {
         leads: {
           create: 'POST /api/leads',
           list: 'GET /api/leads (auth required)',
+        },
+        users: {
+          // Add users endpoints
+          list: 'GET /api/users (admin required)',
+          details: 'GET /api/users/:id (admin required)',
+          create: 'POST /api/users (admin required)',
+          update: 'PUT /api/users/:id (admin required)',
+          stats: 'GET /api/users/stats (admin required)',
+          salesReps: 'GET /api/users/role/sales-reps (auth required)',
         },
         auth: {
           login: 'POST /api/auth/login',
@@ -62,6 +75,7 @@ router.get('/', async (req, res) => {
         'Advanced Vehicle Search & Filtering',
         'Lead Capture & Management',
         'Customer Relationship Management',
+        'User Account Management',
         'Real-time Inventory Updates',
         'Professional Analytics Dashboard',
       ],

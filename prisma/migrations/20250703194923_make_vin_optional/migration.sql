@@ -141,7 +141,6 @@ ALTER TABLE "leads" DROP COLUMN "appointmentCount",
 DROP COLUMN "bestTimeToCall",
 DROP COLUMN "conversionLikelihood",
 DROP COLUMN "nextFollowUpDate",
-DROP COLUMN "preferredContact",
 DROP COLUMN "testDriveCount",
 ALTER COLUMN "financingNeeded" SET DEFAULT false;
 
@@ -170,7 +169,6 @@ DROP COLUMN "city",
 DROP COLUMN "dateOfBirth",
 DROP COLUMN "marketingOptIn",
 DROP COLUMN "password",
-DROP COLUMN "preferredContact",
 DROP COLUMN "profileImage",
 DROP COLUMN "state",
 DROP COLUMN "zipCode";
