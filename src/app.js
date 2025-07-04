@@ -5,7 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
-const rateLimit = require('express-rate-limit');
+// const rateLimit = require('express-rate-limit');
 const { PrismaClient } = require('@prisma/client');
 require('dotenv').config();
 
@@ -67,6 +67,12 @@ app.use(
 );
 
 // Rate limiting
+// In your app.js, find the rate limiting section and comment it out:
+
+// ============================================================================
+// RATE LIMITING - TEMPORARILY DISABLED FOR DEBUGGING
+// ============================================================================
+/*
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
@@ -78,6 +84,9 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api/', limiter);
+*/
+
+console.log('⚠️ Rate limiting disabled for debugging infinite loop issue');
 
 // ============================================================================
 // GENERAL MIDDLEWARE

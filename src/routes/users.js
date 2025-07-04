@@ -1,36 +1,36 @@
 /* eslint-disable no-underscore-dangle */
-/* eslint-disable consistent-return */
-/* eslint-disable object-curly-newline */
-/* eslint-disable max-len */
+/* eslint-disable newline-per-chained-call */
 /* eslint-disable comma-dangle */
-/* eslint-disable no-param-reassign */
-/* eslint-disable arrow-parens */
-// src/routes/users.js
+/* eslint-disable no-unused-vars */
+/* eslint-disable default-case */
+/* eslint-disable no-use-before-define */
+/* eslint-disable no-lonely-if */
+/* eslint-disable consistent-return */
+/* eslint-disable indent */
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
-const { body, query, param, validationResult } = require('express-validator');
+const { body, query, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const logger = require('../utils/logger');
-const { auth, authorize } = require('../middleware/auth');
+const { auth, authorize } = require('../middleware/auth'); // Adjust path as needed
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // ============================================================================
-// GET /api/users - List All Users (Admin/Manager Only)
+// GET /api/users - List Users (Admin Only)
 // ============================================================================
 router.get(
   '/',
+  auth, // Require authentication
+  authorize('ADMIN', 'SUPER_ADMIN'), // Only admins can access
   [
-    auth,
-    authorize('ADMIN', 'MANAGER'),
     query('page').optional().isInt({ min: 1 }),
     query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('role').optional().isString(),
     query('search').optional().isString(),
-    query('role').optional().isIn(['CUSTOMER', 'SALES_REP', 'ADMIN', 'MANAGER']),
     query('sortBy').optional().isIn(['createdAt', 'firstName', 'lastName', 'email', 'role']),
     query('sortOrder').optional().isIn(['asc', 'desc']),
-    query('isActive').optional().isBoolean(),
   ],
   async (req, res) => {
     try {
@@ -46,18 +46,16 @@ router.get(
       const {
         page = 1,
         limit = 20,
-        search,
         role,
+        search,
         sortBy = 'createdAt',
         sortOrder = 'desc',
-        isActive,
       } = req.query;
 
       const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
       // Build where clause
       const where = {
-        ...(isActive !== undefined && { isActive: isActive === 'true' }),
         ...(role && { role }),
         ...(search && {
           OR: [
@@ -68,7 +66,7 @@ router.get(
         }),
       };
 
-      // Build orderBy
+      // Build order clause
       const orderBy = {};
       orderBy[sortBy] = sortOrder;
 
@@ -79,6 +77,7 @@ router.get(
           take: parseInt(limit, 10),
           orderBy,
           select: {
+            // 🔥 FIXED: Only select fields that exist in your schema
             id: true,
             email: true,
             firstName: true,
@@ -86,15 +85,16 @@ router.get(
             phone: true,
             role: true,
             isActive: true,
+            // Removed: profileImage, address, city, state, zipCode (don't exist)
             preferredContact: true,
+            marketingOptIn: true,
             createdAt: true,
             updatedAt: true,
+            // Count related records using correct relation names
             _count: {
               select: {
-                leadsAsCustomer: true,
-                leadsAsSalesRep: true,
-                appointments: true,
-                testDrives: true,
+                leadsAsCustomer: true, // Leads where this user is the customer
+                leadsAsSalesRep: true, // Leads assigned to this user as sales rep
               },
             },
           },
@@ -102,40 +102,31 @@ router.get(
         prisma.user.count({ where }),
       ]);
 
-      // Calculate pagination
-      const totalPages = Math.ceil(total / parseInt(limit, 10));
-      const hasNext = page < totalPages;
-      const hasPrev = page > 1;
-
       res.json({
         success: true,
         data: {
           users: users.map((user) => ({
             ...user,
             fullName: `${user.firstName} ${user.lastName}`,
-            leadCount: user._count.leadsAsCustomer + user._count.leadsAsSalesRep,
-            appointmentCount: user._count.appointments,
-            testDriveCount: user._count.testDrives,
+            leadCount: user._count.leadsAsCustomer || 0,
+            assignedLeadsCount: user._count.leadsAsSalesRep || 0,
+            roleBadge: getRoleBadge(user.role),
+            statusBadge: getStatusBadge(user.isActive),
           })),
           pagination: {
-            current: parseInt(page, 10),
-            total: totalPages,
-            hasNext,
-            hasPrev,
-            totalRecords: total,
+            page: parseInt(page, 10),
             limit: parseInt(limit, 10),
+            total,
+            totalPages: Math.ceil(total / parseInt(limit, 10)),
+          },
+          summary: {
+            totalUsers: total,
+            activeUsers: users.filter((u) => u.isActive).length,
+            inactiveUsers: users.filter((u) => !u.isActive).length,
           },
         },
         company: 'Rides Automotors',
         timestamp: new Date().toISOString(),
-      });
-
-      logger.info('Users fetched successfully', {
-        userId: req.user.id,
-        total,
-        page,
-        limit,
-        filters: { search, role, isActive },
       });
     } catch (error) {
       logger.error('Error fetching users:', error);
@@ -149,185 +140,81 @@ router.get(
 );
 
 // ============================================================================
-// GET /api/users/stats - User Statistics (Admin/Manager Only)
+// GET /api/users/:id - Get User Details (Admin Only)
 // ============================================================================
-router.get('/stats', [auth, authorize('ADMIN', 'MANAGER')], async (req, res) => {
+router.get('/:id', auth, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => {
   try {
-    const [
-      totalUsers,
-      activeUsers,
-      customerCount,
-      salesRepCount,
-      adminCount,
-      managerCount,
-      newThisMonth,
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { isActive: true } }),
-      prisma.user.count({ where: { role: 'CUSTOMER' } }),
-      prisma.user.count({ where: { role: 'SALES_REP' } }),
-      prisma.user.count({ where: { role: 'ADMIN' } }),
-      prisma.user.count({ where: { role: 'MANAGER' } }),
-      prisma.user.count({
-        where: {
-          createdAt: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-          },
-        },
-      }),
-    ]);
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        // 🔥 FIXED: Only select fields that exist
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        // Removed: profileImage, dateOfBirth, address, city, state, zipCode
+        preferredContact: true,
+        marketingOptIn: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+        company: 'Rides Automotors',
+      });
+    }
 
     res.json({
       success: true,
       data: {
-        total: totalUsers,
-        active: activeUsers,
-        inactive: totalUsers - activeUsers,
-        newThisMonth,
-        byRole: {
-          customers: customerCount,
-          salesReps: salesRepCount,
-          admins: adminCount,
-          managers: managerCount,
-        },
-        growthRate: newThisMonth > 0 ? ((newThisMonth / totalUsers) * 100).toFixed(1) : '0',
+        ...user,
+        fullName: `${user.firstName} ${user.lastName}`,
+        roleBadge: getRoleBadge(user.role),
+        statusBadge: getStatusBadge(user.isActive),
       },
       company: 'Rides Automotors',
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    logger.error('Error fetching user stats:', error);
+    logger.error('Error fetching user details:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch user statistics',
+      error: 'Failed to fetch user details',
       company: 'Rides Automotors',
     });
   }
 });
 
 // ============================================================================
-// GET /api/users/:id - Get Single User (Admin/Manager Only)
-// ============================================================================
-router.get(
-  '/:id',
-  [auth, authorize('ADMIN', 'MANAGER'), param('id').isString()],
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-
-      const user = await prisma.user.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          phone: true,
-          role: true,
-          isActive: true,
-          preferredContact: true,
-          createdAt: true,
-          updatedAt: true,
-          leadsAsCustomer: {
-            select: {
-              id: true,
-              status: true,
-              priority: true,
-              createdAt: true,
-              vehicle: {
-                select: {
-                  make: true,
-                  model: true,
-                  year: true,
-                },
-              },
-            },
-            orderBy: { createdAt: 'desc' },
-            take: 5,
-          },
-          leadsAsSalesRep: {
-            select: {
-              id: true,
-              status: true,
-              priority: true,
-              createdAt: true,
-              customer: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  email: true,
-                },
-              },
-            },
-            orderBy: { createdAt: 'desc' },
-            take: 5,
-          },
-        },
-      });
-
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          error: 'User not found',
-          company: 'Rides Automotors',
-        });
-      }
-
-      res.json({
-        success: true,
-        data: {
-          ...user,
-          fullName: `${user.firstName} ${user.lastName}`,
-          customerLeadsCount: user.leadsAsCustomer.length,
-          salesLeadsCount: user.leadsAsSalesRep.length,
-        },
-        company: 'Rides Automotors',
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      logger.error('Error fetching user:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch user',
-        company: 'Rides Automotors',
-      });
-    }
-  }
-);
-
-// ============================================================================
-// POST /api/users - Create New User (Admin Only)
+// POST /api/users - Create User (Admin Only)
 // ============================================================================
 router.post(
   '/',
+  auth,
+  authorize('ADMIN', 'SUPER_ADMIN'),
   [
-    auth,
-    authorize('ADMIN'),
-    body('email').isEmail().normalizeEmail(),
-    body('password').isLength({ min: 6 }),
-    body('firstName').trim().notEmpty(),
-    body('lastName').trim().notEmpty(),
-    body('phone').optional().isMobilePhone(),
+    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('firstName').trim().notEmpty().withMessage('First name is required'),
+    body('lastName').trim().notEmpty().withMessage('Last name is required'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('role').isIn([
       'CUSTOMER',
       'SALES_REP',
-      'ADMIN',
-      'MANAGER',
       'SALES_MANAGER',
       'FINANCE_MANAGER',
+      'ADMIN',
       'SUPER_ADMIN',
     ]),
-    body('preferredContact').optional().isString(),
-    // Optional additional fields
-    body('address').optional().isString(),
-    body('city').optional().isString(),
-    body('state').optional().isString(),
-    body('zipCode').optional().isString(),
-    body('department').optional().isString(),
-    body('position').optional().isString(),
-    body('hireDate').optional().isString(),
-    body('commission').optional().isNumeric(),
-    body('salesGoal').optional().isNumeric(),
+    body('phone').optional().isMobilePhone().withMessage('Valid phone number required'),
   ],
   async (req, res) => {
     try {
@@ -340,10 +227,17 @@ router.post(
         });
       }
 
-      const { email, password, firstName, lastName, phone, role, preferredContact } = req.body;
-
-      // Optional fields that might be sent but aren't stored yet
-      // const { address, city, state, zipCode, department, position, hireDate, commission, salesGoal } = req.body;
+      const {
+        email,
+        password,
+        firstName,
+        lastName,
+        phone,
+        role = 'CUSTOMER',
+        // Removed: address, city, state, zipCode
+        preferredContact,
+        marketingOptIn = false,
+      } = req.body;
 
       // Check if user already exists
       const existingUser = await prisma.user.findUnique({
@@ -353,16 +247,16 @@ router.post(
       if (existingUser) {
         return res.status(409).json({
           success: false,
-          error: 'User already exists with this email',
+          error: 'User with this email already exists',
           company: 'Rides Automotors',
         });
       }
 
       // Hash password
-      const hashedPassword = await bcrypt.hash(password, 12);
+      const hashedPassword = await bcrypt.hash(password, 10);
 
       // Create user
-      const user = await prisma.user.create({
+      const newUser = await prisma.user.create({
         data: {
           email,
           password: hashedPassword,
@@ -370,7 +264,9 @@ router.post(
           lastName,
           phone,
           role,
+          // Removed: address, city, state, zipCode
           preferredContact: preferredContact || (phone ? 'phone' : 'email'),
+          marketingOptIn,
           isActive: true,
         },
         select: {
@@ -381,7 +277,6 @@ router.post(
           phone: true,
           role: true,
           isActive: true,
-          preferredContact: true,
           createdAt: true,
         },
       });
@@ -389,19 +284,22 @@ router.post(
       res.status(201).json({
         success: true,
         data: {
-          ...user,
-          fullName: `${user.firstName} ${user.lastName}`,
+          user: {
+            ...newUser,
+            fullName: `${newUser.firstName} ${newUser.lastName}`,
+            roleBadge: getRoleBadge(newUser.role),
+            statusBadge: getStatusBadge(newUser.isActive),
+          },
         },
         message: 'User created successfully',
         company: 'Rides Automotors',
         timestamp: new Date().toISOString(),
       });
 
-      logger.info('New user created', {
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        createdBy: req.user.id,
+      logger.info('User created by admin', {
+        createdUserId: newUser.id,
+        createdByUserId: req.user.id,
+        role: newUser.role,
       });
     } catch (error) {
       logger.error('Error creating user:', error);
@@ -419,37 +317,16 @@ router.post(
 // ============================================================================
 router.put(
   '/:id',
+  auth,
+  authorize('ADMIN', 'SUPER_ADMIN'),
   [
-    auth,
-    authorize('ADMIN'),
-    param('id').isString(),
     body('email').optional().isEmail().normalizeEmail(),
     body('firstName').optional().trim().notEmpty(),
     body('lastName').optional().trim().notEmpty(),
-    body('phone').optional().isMobilePhone(),
     body('role')
       .optional()
-      .isIn([
-        'CUSTOMER',
-        'SALES_REP',
-        'ADMIN',
-        'MANAGER',
-        'SALES_MANAGER',
-        'FINANCE_MANAGER',
-        'SUPER_ADMIN',
-      ]),
-    body('isActive').optional().isBoolean(),
-    body('preferredContact').optional().isString(),
-    // Optional additional fields
-    body('address').optional().isString(),
-    body('city').optional().isString(),
-    body('state').optional().isString(),
-    body('zipCode').optional().isString(),
-    body('department').optional().isString(),
-    body('position').optional().isString(),
-    body('hireDate').optional().isString(),
-    body('commission').optional().isNumeric(),
-    body('salesGoal').optional().isNumeric(),
+      .isIn(['CUSTOMER', 'SALES_REP', 'SALES_MANAGER', 'FINANCE_MANAGER', 'ADMIN', 'SUPER_ADMIN']),
+    body('phone').optional().isMobilePhone(),
   ],
   async (req, res) => {
     try {
@@ -463,24 +340,10 @@ router.put(
       }
 
       const { id } = req.params;
-      const updateData = req.body;
+      const updateData = { ...req.body };
 
-      // Filter out fields that aren't in our database schema yet
-      const allowedFields = [
-        'email',
-        'firstName',
-        'lastName',
-        'phone',
-        'role',
-        'isActive',
-        'preferredContact',
-      ];
-      const filteredUpdateData = Object.keys(updateData)
-        .filter((key) => allowedFields.includes(key))
-        .reduce((obj, key) => {
-          obj[key] = updateData[key];
-          return obj;
-        }, {});
+      // Remove password from update data (handle separately for security)
+      delete updateData.password;
 
       // Check if user exists
       const existingUser = await prisma.user.findUnique({
@@ -513,7 +376,7 @@ router.put(
       // Update user
       const updatedUser = await prisma.user.update({
         where: { id },
-        data: filteredUpdateData,
+        data: updateData,
         select: {
           id: true,
           email: true,
@@ -522,8 +385,6 @@ router.put(
           phone: true,
           role: true,
           isActive: true,
-          preferredContact: true,
-          createdAt: true,
           updatedAt: true,
         },
       });
@@ -531,18 +392,22 @@ router.put(
       res.json({
         success: true,
         data: {
-          ...updatedUser,
-          fullName: `${updatedUser.firstName} ${updatedUser.lastName}`,
+          user: {
+            ...updatedUser,
+            fullName: `${updatedUser.firstName} ${updatedUser.lastName}`,
+            roleBadge: getRoleBadge(updatedUser.role),
+            statusBadge: getStatusBadge(updatedUser.isActive),
+          },
         },
         message: 'User updated successfully',
         company: 'Rides Automotors',
         timestamp: new Date().toISOString(),
       });
 
-      logger.info('User updated', {
-        userId: id,
-        updatedBy: req.user.id,
-        changes: Object.keys(updateData),
+      logger.info('User updated by admin', {
+        updatedUserId: id,
+        updatedByUserId: req.user.id,
+        changedFields: Object.keys(updateData),
       });
     } catch (error) {
       logger.error('Error updating user:', error);
@@ -556,100 +421,73 @@ router.put(
 );
 
 // ============================================================================
-// DELETE /api/users/:id - Delete User (Admin Only)
+// PATCH /api/users/:id/status - Toggle User Status (Admin Only)
 // ============================================================================
-router.delete('/:id', [auth, authorize('ADMIN'), param('id').isString()], async (req, res) => {
-  try {
-    const { id } = req.params;
+router.patch(
+  '/:id/status',
+  auth,
+  authorize('ADMIN', 'SUPER_ADMIN'),
+  [body('isActive').isBoolean().withMessage('isActive must be a boolean')],
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { isActive } = req.body;
 
-    // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id },
-    });
+      const user = await prisma.user.update({
+        where: { id },
+        data: { isActive },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          isActive: true,
+        },
+      });
 
-    if (!existingUser) {
-      return res.status(404).json({
+      res.json({
+        success: true,
+        data: { user },
+        message: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
+        company: 'Rides Automotors',
+        timestamp: new Date().toISOString(),
+      });
+
+      logger.info('User status changed', {
+        userId: id,
+        newStatus: isActive ? 'active' : 'inactive',
+        changedByUserId: req.user.id,
+      });
+    } catch (error) {
+      logger.error('Error updating user status:', error);
+      res.status(500).json({
         success: false,
-        error: 'User not found',
+        error: 'Failed to update user status',
         company: 'Rides Automotors',
       });
     }
-
-    // Prevent deletion of the current user
-    if (id === req.user.id) {
-      return res.status(400).json({
-        success: false,
-        error: 'Cannot delete your own account',
-        company: 'Rides Automotors',
-      });
-    }
-
-    // Soft delete by setting isActive to false (recommended)
-    await prisma.user.update({
-      where: { id },
-      data: { isActive: false },
-    });
-
-    res.json({
-      success: true,
-      message: 'User deactivated successfully',
-      company: 'Rides Automotors',
-      timestamp: new Date().toISOString(),
-    });
-
-    logger.info('User deactivated', {
-      userId: id,
-      deactivatedBy: req.user.id,
-    });
-  } catch (error) {
-    logger.error('Error deleting user:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to delete user',
-      company: 'Rides Automotors',
-    });
   }
-});
+);
 
 // ============================================================================
-// GET /api/users/sales-reps - Get All Sales Representatives
+// HELPER FUNCTIONS
 // ============================================================================
-router.get('/role/sales-reps', [auth], async (req, res) => {
-  try {
-    const salesReps = await prisma.user.findMany({
-      where: {
-        role: 'SALES_REP',
-        isActive: true,
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        phone: true,
-      },
-      orderBy: {
-        firstName: 'asc',
-      },
-    });
 
-    res.json({
-      success: true,
-      data: salesReps.map((rep) => ({
-        ...rep,
-        fullName: `${rep.firstName} ${rep.lastName}`,
-      })),
-      company: 'Rides Automotors',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Error fetching sales reps:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch sales representatives',
-      company: 'Rides Automotors',
-    });
-  }
-});
+function getRoleBadge(role) {
+  const badges = {
+    CUSTOMER: { color: 'blue', text: '👤 Customer' },
+    SALES_REP: { color: 'green', text: '🤝 Sales Rep' },
+    SALES_MANAGER: { color: 'purple', text: '👨‍💼 Sales Manager' },
+    FINANCE_MANAGER: { color: 'orange', text: '💰 Finance Manager' },
+    ADMIN: { color: 'red', text: '⚡ Admin' },
+    SUPER_ADMIN: { color: 'black', text: '🛡️ Super Admin' },
+  };
+
+  return badges[role] || badges.CUSTOMER;
+}
+
+function getStatusBadge(isActive) {
+  return isActive ? { color: 'green', text: '✅ Active' } : { color: 'red', text: '❌ Inactive' };
+}
 
 module.exports = router;
