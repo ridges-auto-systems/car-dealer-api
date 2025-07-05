@@ -1,3 +1,4 @@
+/* eslint-disable no-shadow */
 /* eslint-disable no-else-return */
 /* eslint-disable object-curly-newline */
 /* eslint-disable no-unused-vars */
@@ -281,7 +282,7 @@ async function processCartItem(tx, item, customer, lead) {
 }
 
 // ============================================================================
-// POST /api/bookings/cart-checkout - Process Cart Checkout
+// POST /api/booking/cart-checkout - Process Cart Checkout
 // ============================================================================
 
 router.post(
@@ -396,7 +397,7 @@ router.post(
         const bookings = [];
         const processingErrors = [];
 
-        itemResults.forEach((index) => {
+        itemResults.forEach((result, index) => {
           if (result.status === 'fulfilled') {
             bookings.push(result.value);
           } else {
@@ -922,360 +923,22 @@ async function expireOldReservations() {
     logger.error('Reservation cleanup error:', error);
   }
 }
-
 // Run cleanup every 30 minutes
-// (Already declared above, so do not redeclare here)
+const cleanupInterval = setInterval(expireOldReservations, 30 * 60 * 1000);
 
 // Export cleanup function for manual use
 router.cleanup = expireOldReservations;
 
 // Cleanup on process exit
 process.on('SIGINT', () => {
-  clearInterval();
+  clearInterval(cleanupInterval);
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  clearInterval();
+  clearInterval(cleanupInterval);
   process.exit(0);
 });
-
-module.exports = router;
-
-// ============================================================================
-// GET /api/bookings/availability/:vehicleId - Check Vehicle Availability
-// ============================================================================
-
-router.get('/availability/:vehicleId', async (req, res) => {
-  try {
-    const { vehicleId } = req.params;
-    const { date } = req.query;
-
-    const vehicle = await prisma.vehicle.findUnique({
-      where: { id: vehicleId },
-      include: {
-        testDrives: {
-          where: {
-            scheduledAt: date
-              ? {
-                  gte: new Date(date),
-                  lt: new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000),
-                }
-              : {
-                  gte: new Date(),
-                  lte: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // Next 14 days
-                },
-            status: { notIn: [TEST_DRIVE_STATUS.CANCELLED] },
-          },
-        },
-        appointments: {
-          where: {
-            type: APPOINTMENT_TYPES.VEHICLE_RESERVATION,
-            status: { in: [APPOINTMENT_STATUS.SCHEDULED, APPOINTMENT_STATUS.CONFIRMED] },
-            scheduledAt: { gt: new Date() },
-          },
-        },
-      },
-    });
-
-    if (!vehicle) {
-      return res.status(404).json({
-        success: false,
-        error: 'Vehicle not found',
-        company: 'Ridges Automotors',
-      });
-    }
-
-    // Calculate available time slots
-    const availableSlots = calculateAvailableTimeSlots(vehicle.testDrives, date || new Date());
-
-    res.json({
-      success: true,
-      data: {
-        vehicleId,
-        vehicleInfo: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
-        isAvailableForReservation:
-          vehicle.status === 'AVAILABLE' && vehicle.appointments.length === 0,
-        isAvailableForTestDrive: !['SOLD', 'UNAVAILABLE'].includes(vehicle.status),
-        availableTimeSlots: availableSlots,
-        activeReservations: vehicle.appointments.length,
-        upcomingTestDrives: vehicle.testDrives.length,
-        vehicleStatus: vehicle.status,
-      },
-      company: 'Ridges Automotors',
-    });
-  } catch (error) {
-    logger.error('Availability check error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to check availability',
-      company: 'Ridges Automotors',
-    });
-  }
-});
-
-// ============================================================================
-// GET /api/bookings/customer/:customerId - Get Customer Bookings
-// ============================================================================
-
-router.get('/customer/:customerId', async (req, res) => {
-  try {
-    const { customerId } = req.params;
-
-    const [appointments, testDrives] = await Promise.all([
-      prisma.appointment.findMany({
-        where: {
-          customerId,
-          isActive: true,
-        },
-        include: {
-          vehicle: {
-            select: {
-              id: true,
-              make: true,
-              model: true,
-              year: true,
-              trim: true,
-              stockNumber: true,
-              price: true,
-              images: true,
-              status: true,
-            },
-          },
-        },
-        orderBy: { scheduledAt: 'desc' },
-      }),
-      prisma.testDrive.findMany({
-        where: {
-          customerId,
-          isActive: true,
-        },
-        include: {
-          vehicle: {
-            select: {
-              id: true,
-              make: true,
-              model: true,
-              year: true,
-              trim: true,
-              stockNumber: true,
-              price: true,
-              images: true,
-              status: true,
-            },
-          },
-        },
-        orderBy: { scheduledAt: 'desc' },
-      }),
-    ]);
-
-    const allBookings = [
-      ...appointments.map((apt) => ({
-        ...apt,
-        bookingType: 'appointment',
-        displayType:
-          apt.type === APPOINTMENT_TYPES.VEHICLE_RESERVATION
-            ? 'Vehicle Reservation'
-            : 'Appointment',
-      })),
-      ...testDrives.map((td) => ({
-        ...td,
-        bookingType: 'test_drive',
-        displayType: 'Test Drive',
-      })),
-    ].sort((a, b) => new Date(b.scheduledAt) - new Date(a.scheduledAt));
-
-    res.json({
-      success: true,
-      data: allBookings,
-      count: allBookings.length,
-      summary: {
-        totalBookings: allBookings.length,
-        appointments: appointments.length,
-        testDrives: testDrives.length,
-        upcoming: allBookings.filter((b) => new Date(b.scheduledAt) > new Date()).length,
-        past: allBookings.filter((b) => new Date(b.scheduledAt) <= new Date()).length,
-      },
-      company: 'Ridges Automotors',
-    });
-  } catch (error) {
-    logger.error('Customer bookings error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch bookings',
-      company: 'Ridges Automotors',
-    });
-  }
-});
-
-// ============================================================================
-// PATCH /api/bookings/appointment/:appointmentId/status - Update Appointment Status
-// ============================================================================
-
-router.patch(
-  '/appointment/:appointmentId/status',
-  [body('status').isIn(Object.values(APPOINTMENT_STATUS)).withMessage('Valid status is required')],
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          errors: errors.array(),
-          company: 'Ridges Automotors',
-        });
-      }
-
-      const { appointmentId } = req.params;
-      const { status, notes } = req.body;
-
-      // Get current appointment first
-      const currentAppointment = await prisma.appointment.findUnique({
-        where: { id: appointmentId },
-      });
-
-      if (!currentAppointment) {
-        return res.status(404).json({
-          success: false,
-          error: 'Appointment not found',
-          company: 'Ridges Automotors',
-        });
-      }
-
-      const appointment = await prisma.appointment.update({
-        where: { id: appointmentId },
-        data: {
-          status,
-          notes: notes ? `${currentAppointment.notes || ''}\n${notes}`.trim() : undefined,
-          updatedAt: new Date(),
-        },
-        include: {
-          vehicle: true,
-          customer: true,
-        },
-      });
-
-      // Handle status-specific logic
-      if (status === APPOINTMENT_STATUS.CANCELLED) {
-        // Release vehicle if it was reserved
-        if (appointment.type === APPOINTMENT_TYPES.VEHICLE_RESERVATION) {
-          await prisma.vehicle.update({
-            where: { id: appointment.vehicleId },
-            data: { status: 'AVAILABLE' },
-          });
-
-          logger.info('Vehicle released from cancelled reservation', {
-            vehicleId: appointment.vehicleId,
-            appointmentId: appointment.id,
-          });
-        }
-      }
-
-      res.json({
-        success: true,
-        data: appointment,
-        company: 'Ridges Automotors',
-      });
-
-      logger.info('Appointment status updated', {
-        appointmentId,
-        newStatus: status,
-        vehicleId: appointment.vehicleId,
-      });
-    } catch (error) {
-      logger.error('Appointment status update error:', error);
-
-      if (error.code === 'P2025') {
-        return res.status(404).json({
-          success: false,
-          error: 'Appointment not found',
-          company: 'Ridges Automotors',
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        error: 'Failed to update appointment status',
-        company: 'Ridges Automotors',
-      });
-    }
-  }
-);
-
-// ============================================================================
-// PATCH /api/bookings/test-drive/:testDriveId/status - Update Test Drive Status
-// ============================================================================
-
-router.patch(
-  '/test-drive/:testDriveId/status',
-  [
-    body('status').isIn(Object.values(TEST_DRIVE_STATUS)).withMessage('Valid status is required'),
-    body('rating').optional().isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1-5'),
-  ],
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          errors: errors.array(),
-          company: 'Ridges Automotors',
-        });
-      }
-
-      const { testDriveId } = req.params;
-      const { status, notes, feedback, rating } = req.body;
-
-      const updateData = {
-        status,
-        updatedAt: new Date(),
-      };
-
-      if (notes) updateData.notes = notes;
-      if (feedback) updateData.feedback = feedback;
-      if (rating) updateData.rating = parseInt(rating, 10);
-
-      const testDrive = await prisma.testDrive.update({
-        where: { id: testDriveId },
-        data: updateData,
-        include: {
-          vehicle: true,
-          customer: true,
-        },
-      });
-
-      res.json({
-        success: true,
-        data: testDrive,
-        company: 'Ridges Automotors',
-      });
-
-      logger.info('Test drive status updated', {
-        testDriveId,
-        newStatus: status,
-        rating: rating || null,
-        vehicleId: testDrive.vehicleId,
-      });
-    } catch (error) {
-      logger.error('Test drive status update error:', error);
-
-      if (error.code === 'P2025') {
-        return res.status(404).json({
-          success: false,
-          error: 'Test drive not found',
-          company: 'Ridges Automotors',
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        error: 'Failed to update test drive status',
-        company: 'Ridges Automotors',
-      });
-    }
-  }
-);
-
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -1314,80 +977,5 @@ async function sendBookingNotification(leadId, bookings) {
     throw error;
   }
 }
-
-// ============================================================================
-// CLEANUP JOBS (Run periodically)
-// ============================================================================
-
-// Expire old reservations
-async function expireOldReservation() {
-  try {
-    const now = new Date();
-
-    // Find expired reservations (appointments older than scheduled time that are still pending)
-    const expiredAppointments = await prisma.appointment.findMany({
-      where: {
-        type: APPOINTMENT_TYPES.VEHICLE_RESERVATION,
-        status: APPOINTMENT_STATUS.SCHEDULED,
-        scheduledAt: { lt: now },
-      },
-      include: {
-        vehicle: {
-          select: { id: true, make: true, model: true, year: true },
-        },
-      },
-    });
-
-    const updatePromises = expiredAppointments.map(async (appointment) => {
-      // Update appointment status to cancelled
-      await prisma.appointment.update({
-        where: { id: appointment.id },
-        data: {
-          status: APPOINTMENT_STATUS.CANCELLED,
-          notes: `${appointment.notes || ''}\nAuto-expired on ${now.toISOString()}`.trim(),
-        },
-      });
-
-      // Release the vehicle
-      await prisma.vehicle.update({
-        where: { id: appointment.vehicleId },
-        data: { status: 'AVAILABLE' },
-      });
-
-      logger.info('Expired reservation processed', {
-        appointmentId: appointment.id,
-        vehicleId: appointment.vehicleId,
-        vehicleInfo: `${appointment.vehicle.year} ${appointment.vehicle.make} ${appointment.vehicle.model}`,
-      });
-    });
-
-    await Promise.all(updatePromises);
-
-    if (expiredAppointments.length > 0) {
-      logger.info(`Processed ${expiredAppointments.length} expired reservations`);
-    }
-  } catch (error) {
-    logger.error('Reservation cleanup error:', error);
-  }
-}
-
-// Run cleanup every 30 minutes
-const cleanupInterval = setInterval(expireOldReservations, 30 * 60 * 1000);
-
-// Export cleanup function for manual use
-router.cleanup = expireOldReservations;
-
-// Cleanup on process exit
-process.on('SIGINT', () => {
-  clearInterval(cleanupInterval);
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  clearInterval(cleanupInterval);
-  process.exit(0);
-});
-
-module.exports = router;
 
 module.exports = router;
