@@ -1,2 +1,10 @@
--- AlterTable
-ALTER TABLE "users" ADD COLUMN     "marketingOptIn" BOOLEAN NOT NULL DEFAULT false;
+CREATE TYPE "VehicleStatus" AS ENUM (
+  'AVAILABLE',
+  'PENDING', 
+  'HOLD',
+  'RESERVED',
+  'SOLD',
+  'UNAVAILABLE',
+  'IN_TRANSIT',
+  'IN_SERVICE'
+);

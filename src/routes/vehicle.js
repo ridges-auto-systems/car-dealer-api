@@ -194,7 +194,7 @@ router.get(
               currency: 'USD',
               minimumFractionDigits: 0,
             }).format(vehicle.price),
-            mileageFormatted: vehicle.mileage.toLocaleString(),
+            mileageFormatted: vehicle.mileage != null ? vehicle.mileage.toLocaleString() : null,
             fuelEconomy:
               vehicle.mpgCity && vehicle.mpgHighway
                 ? `${vehicle.mpgCity}/${vehicle.mpgHighway} mpg`
@@ -318,7 +318,7 @@ router.get('/:id', async (req, res) => {
             minimumFractionDigits: 0,
           }).format(vehicle.msrp)
         : null,
-      mileageFormatted: vehicle.mileage.toLocaleString(),
+      mileageFormatted: vehicle.mileage != null ? vehicle.mileage.toLocaleString() : null,
       fuelEconomy: {
         city: vehicle.mpgCity,
         highway: vehicle.mpgHighway,
@@ -419,7 +419,7 @@ router.get('/featured/list', async (req, res) => {
             currency: 'USD',
             minimumFractionDigits: 0,
           }).format(vehicle.price),
-          mileageFormatted: vehicle.mileage.toLocaleString(),
+          mileageFormatted: vehicle.mileage != null ? vehicle.mileage.toLocaleString() : null,
           mainImage: vehicle.images?.[0] || null,
           featuredBadge: true,
         })),
@@ -604,7 +604,7 @@ router.post(
               minimumFractionDigits: 0,
             }).format(vehicle.msrp)
           : null,
-        mileageFormatted: vehicle.mileage.toLocaleString(),
+        mileageFormatted: vehicle.mileage != null ? vehicle.mileage.toLocaleString() : null,
         fuelEconomy:
           vehicle.mpgCity && vehicle.mpgHighway
             ? `${vehicle.mpgCity}/${vehicle.mpgHighway} mpg`
@@ -810,7 +810,8 @@ router.put(
               minimumFractionDigits: 0,
             }).format(updatedVehicle.msrp)
           : null,
-        mileageFormatted: updatedVehicle.mileage.toLocaleString(),
+        mileageFormatted:
+          updatedVehicle.mileage != null ? updatedVehicle.mileage.toLocaleString() : null,
         fuelEconomy:
           updatedVehicle.mpgCity && updatedVehicle.mpgHighway
             ? `${updatedVehicle.mpgCity}/${updatedVehicle.mpgHighway} mpg`

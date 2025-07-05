@@ -6,6 +6,7 @@ const vehicleRoutes = require('./vehicle');
 const leadRoutes = require('./leads');
 const authRoutes = require('./auth');
 const userRoutes = require('./users');
+const bookingRoutes = require('./booking');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -17,6 +18,7 @@ router.use('/vehicles', vehicleRoutes);
 router.use('/leads', leadRoutes);
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
+router.use('/booking', bookingRoutes);
 
 // ============================================================================
 // API INFORMATION ENDPOINT
