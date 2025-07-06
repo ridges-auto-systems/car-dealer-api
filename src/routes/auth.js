@@ -10,6 +10,7 @@ const logger = require('../utils/logger');
 
 const router = express.Router();
 const prisma = new PrismaClient();
+const { auth } = require('../middleware/auth');
 
 // ============================================================================
 // POST /api/auth/login - User Login
@@ -211,12 +212,25 @@ router.post(
 // ============================================================================
 // GET /api/auth/me - Get Current User
 // ============================================================================
-router.get('/me', async (req, res) => {
-  res.json({
-    message: 'User profile endpoint - authentication middleware required',
-    company: 'Rides Automotors',
-    note: 'This endpoint will be implemented with authentication middleware',
-  });
+router.get('/me', auth, async (req, res) => {
+  try {
+    // The auth middleware populates req.user
+    res.json({
+      success: true,
+      data: {
+        user: req.user,
+      },
+      company: 'Rides Automotors',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Get user profile error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get user profile',
+      company: 'Rides Automotors',
+    });
+  }
 });
 
 module.exports = router;

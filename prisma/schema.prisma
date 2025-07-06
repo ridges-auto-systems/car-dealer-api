@@ -1,9 +1,8 @@
-// ============================================================================
-// prisma/schema.prisma - Rides Automotors Database Schema (FIXED)
-// ============================================================================
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl", "linux-musl-openssl-3.0.x", "debian-openssl-1.1.x"]
 }
 
 datasource db {
@@ -11,510 +10,260 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================================
-// USER MANAGEMENT
-// ============================================================================
+// User model with preferredContact field
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  password  String
+  password  String?  // Made optional for backwards compatibility
   firstName String
   lastName  String
   phone     String?
   role      UserRole @default(CUSTOMER)
   isActive  Boolean  @default(true)
   
-  // Profile information
-  profileImage String?
-  dateOfBirth  DateTime?
-  address      String?
-  city         String?
-  state        String?
-  zipCode      String?
+  // Preferred contact method
+  preferredContact String? // "email", "phone", "sms", etc.
   
-  // Preferences
-  preferredContact String? // email, phone, text
-  marketingOptIn   Boolean @default(false)
+  // Marketing preferences (if you want to keep this field)
+  marketingOptIn   Boolean  @default(false)
   
-  // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations - Customer activities
-  customerLeads           Lead[]               @relation("CustomerLead")
-  customerAppointments    Appointment[]        @relation("CustomerAppointment")
-  customerTestDrives      TestDrive[]          @relation("CustomerTestDrive")
-  customerFinancingApps   FinancingApplication[] @relation("CustomerFinancing")
-  customerCommunications  Communication[]      @relation("CustomerCommunication")
-
-  // Relations - Sales rep activities
-  assignedLeads           Lead[]               @relation("AssignedSalesRep")
-  salesAppointments       Appointment[]        @relation("SalesRepAppointment")
-  salesTestDrives         TestDrive[]          @relation("SalesRepTestDrive")
-  salesCommunications     Communication[]      @relation("SalesRepCommunication")
+  // Relations
+  leadsAsCustomer     Lead[]               @relation("CustomerLeads")
+  leadsAsSalesRep     Lead[]               @relation("SalesRepLeads")
+  appointments        Appointment[]
+  testDrives          TestDrive[]
+  financingApps       FinancingApplication[]
+  communications      Communication[]
 
   @@map("users")
 }
 
-// ============================================================================
-// VEHICLE INVENTORY
-// ============================================================================
-model Vehicle {
-  id          String        @id @default(cuid())
+// Lead model
+model Lead {
+  id                  String   @id @default(cuid())
+  customerId          String
+  vehicleId           String?
+  salesRepId          String?
+  source              String
+  status              String   @default("NEW")
+  priority            String   @default("MEDIUM")
+  notes               String?
+  interestedInTrade   Boolean  @default(false)
+  tradeVehicleInfo    Json?
+  financingNeeded     Boolean  @default(false)
+  timeline            String?
+  budgetRange         String?
+  leadScore           Int      @default(0)
+  isHot               Boolean  @default(false)
+  isActive            Boolean  @default(true)
   
-  // Basic Information
-  vin         String        @unique
-  stockNumber String?       @unique
-  make        String
-  model       String
-  year        Int
-  trim        String?
-  
-  // Physical Details
-  mileage     Int
-  exterior    String?
-  interior    String?
-  engine      String?
-  transmission String?
-  drivetrain  String?
-  fuelType    String?
-  doors       Int?
-  seats       Int?
-  
-  // Fuel Economy
-  mpgCity     Int?
-  mpgHighway  Int?
-  mpgCombined Int?
-  
-  // Pricing
-  price       Float
-  msrp        Float?
-  costBasis   Float? // What we paid for it
-  
-  // Condition & Status
-  condition   VehicleCondition
-  status      VehicleStatus @default(AVAILABLE)
-  
-  // Features & Equipment
-  features    String[] // Array of feature strings
-  packages    String[] // Equipment packages
-  options     String[] // Additional options
-  
-  // Media
-  images      String[] // URLs to vehicle images
-  videos      String[] // URLs to videos
-  documents   String[] // URLs to documents (window sticker, etc.)
-  
-  // Marketing
-  description String?
-  highlights  String[] // Key selling points
-  keywords    String[] // SEO keywords
-  
-  // Inspection & History
-  inspectionDate    DateTime?
-  inspectionNotes   String?
-  accidentHistory   String?
-  serviceHistory    String?
-  previousOwners    Int?
-  
-  // Location & Display
-  location    String?  // Lot location
-  isOnline    Boolean  @default(true)
-  isFeatured  Boolean  @default(false)
-  displayOrder Int?
-  
-  // Business Logic
-  isActive    Boolean  @default(true)
-  soldDate    DateTime?
-  soldPrice   Float?
-  
-  // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   // Relations
-  leads           Lead[]
-  appointments    Appointment[]
-  testDrives      TestDrive[]
-  financingApps   FinancingApplication[]
-  communications  Communication[]
-  vehicleHistory  VehicleHistory[]
-
-  @@map("vehicles")
-}
-
-// ============================================================================
-// LEAD MANAGEMENT
-// ============================================================================
-model Lead {
-  id          String   @id @default(cuid())
-  
-  // Customer Information
-  customerId  String
-  salesRepId  String?
-  
-  // Vehicle Interest
-  vehicleId   String?
-  
-  // Lead Details
-  status      LeadStatus @default(NEW)
-  source      String?    // website, phone, walk-in, referral, etc.
-  priority    LeadPriority @default(MEDIUM)
-  
-  // Contact Preferences
-  preferredContact String? // email, phone, text
-  bestTimeToCall   String?
-  
-  // Interest Details
-  notes               String?
-  interestedInTrade   Boolean @default(false)
-  tradeVehicleInfo    Json?   // Make, model, year, mileage, condition
-  financingNeeded     Boolean @default(true)
-  budgetRange         String? // "20k-30k", "Under 25k", etc.
-  timeline            String? // "This week", "Next month", etc.
-  
-  // Sales Process
-  lastContactDate     DateTime?
-  nextFollowUpDate    DateTime?
-  appointmentCount    Int      @default(0)
-  testDriveCount      Int      @default(0)
-  
-  // Scoring & Analytics
-  leadScore           Int?     // 1-100 lead quality score
-  conversionLikelihood Float?  // 0.0-1.0 probability
-  
-  // Business Logic
-  isActive    Boolean  @default(true)
-  isHot       Boolean  @default(false)
-  
-  // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations with proper naming
-  customer       User          @relation("CustomerLead", fields: [customerId], references: [id])
-  vehicle        Vehicle?      @relation(fields: [vehicleId], references: [id])
-  salesRep       User?         @relation("AssignedSalesRep", fields: [salesRepId], references: [id])
-  appointments   Appointment[]
-  testDrives     TestDrive[]
-  communications Communication[]
-  financingApps  FinancingApplication[]
+  customer            User                 @relation("CustomerLeads", fields: [customerId], references: [id], onDelete: Restrict)
+  salesRep            User?                @relation("SalesRepLeads", fields: [salesRepId], references: [id], onDelete: SetNull)
+  vehicle             Vehicle?             @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  testDrives          TestDrive[]
+  financingApps       FinancingApplication[]
+  communications      Communication[]
 
   @@map("leads")
 }
 
-// ============================================================================
-// APPOINTMENT SCHEDULING
-// ============================================================================
-model Appointment {
-  id          String            @id @default(cuid())
+// Vehicle model
+model Vehicle {
+  id               String   @id @default(cuid())
+  stockNumber      String   @unique
+  make             String
+  model            String
+  year             Int
+  trim             String?
+  price            Decimal
+  mileage          Int?
+  condition        String
+  color            String?
+  vin              String?  @unique
+  exterior         String?
+  interior         String?
+  engine           String?
+  transmission     String?
+  drivetrain       String?
+  fuelType         String?
+  doors            Int?
+  seats            Int?
+  mpgCity          Int?
+  mpgHighway       Int?
+  mpgCombined      Int?
+  msrp             Decimal?
+  costBasis        Decimal?
+  features         Json?
+  packages         Json?
+  options          Json?
+  images           Json?
+  videos           Json?
+  documents        Json?
+  description      String?
+  highlights       Json?
+  keywords         Json?
+  inspectionDate   DateTime?
+  inspectionNotes  String?
+  accidentHistory  String?
+  serviceHistory   String?
+  previousOwners   Int?
+  location         String?
+  isOnline         Boolean  @default(true)
+  isFeatured       Boolean  @default(false)
+  displayOrder     Int?
+  status           String
+  isActive         Boolean  @default(true)
+  soldDate         DateTime?
+  soldPrice        Decimal?
   
-  // Participants
-  leadId      String
-  customerId  String
-  vehicleId   String?
-  salesRepId  String?
-  
-  // Appointment Details
-  type        AppointmentType
-  scheduledAt DateTime
-  duration    Int               @default(60) // minutes
-  status      AppointmentStatus @default(SCHEDULED)
-  
-  // Location & Setup
-  location    String?
-  meetingRoom String?
-  specialRequests String?
-  
-  // Follow-up
-  notes       String?
-  outcome     String?
-  rating      Int? // Customer satisfaction 1-5
-  
-  // Reminders
-  reminderSent Boolean @default(false)
-  
-  // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  // Relations with proper naming
-  lead        Lead     @relation(fields: [leadId], references: [id])
-  customer    User     @relation("CustomerAppointment", fields: [customerId], references: [id])
-  vehicle     Vehicle? @relation(fields: [vehicleId], references: [id])
-  salesRep    User?    @relation("SalesRepAppointment", fields: [salesRepId], references: [id])
+  // Relations
+  leads                Lead[]
+  appointments         Appointment[]
+  testDrives          TestDrive[]
+  financingApps       FinancingApplication[]
+  vehicleHistory      VehicleHistory[]
+
+  @@map("vehicles")
+}
+
+// Appointment model
+model Appointment {
+  id           String   @id @default(cuid())
+  customerId   String
+  vehicleId    String
+  scheduledAt  DateTime
+  duration     Int      @default(60)
+  type         String   @default("SHOWROOM_VISIT")
+  status       String   @default("SCHEDULED")
+  notes        String?
+  isActive     Boolean  @default(true)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  customer     User     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
 
   @@map("appointments")
 }
 
-// ============================================================================
-// TEST DRIVES
-// ============================================================================
+// Test Drive model
 model TestDrive {
-  id          String            @id @default(cuid())
+  id           String   @id @default(cuid())
+  leadId       String
+  customerId   String
+  vehicleId    String
+  scheduledAt  DateTime
+  duration     Int      @default(30)
+  status       String   @default("SCHEDULED")
+  feedback     String?
+  notes        String?
+  rating       Int?
+  isActive     Boolean  @default(true)
   
-  // Participants
-  leadId      String
-  customerId  String
-  vehicleId   String
-  salesRepId  String?
-  
-  // Test Drive Details
-  scheduledAt DateTime
-  startTime   DateTime?
-  endTime     DateTime?
-  status      TestDriveStatus @default(SCHEDULED)
-  
-  // Route & Safety
-  plannedRoute    String?
-  driverLicense   String? // License number
-  licenseVerified Boolean @default(false)
-  insuranceVerified Boolean @default(false)
-  
-  // Feedback
-  customerNotes   String?
-  salesRepNotes   String?
-  vehicleFeedback Json?   // Structured feedback
-  rating          Int?    // 1-5 rating
-  
-  // Business Logic
-  leadToSale      Boolean @default(false)
-  
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  // Relations with proper naming
-  lead     Lead    @relation(fields: [leadId], references: [id])
-  customer User    @relation("CustomerTestDrive", fields: [customerId], references: [id])
-  vehicle  Vehicle @relation(fields: [vehicleId], references: [id])
-  salesRep User?   @relation("SalesRepTestDrive", fields: [salesRepId], references: [id])
+  // Relations
+  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  customer     User     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
 
   @@map("test_drives")
 }
 
-// ============================================================================
-// FINANCING
-// ============================================================================
+// Financing Application model
 model FinancingApplication {
-  id          String                 @id @default(cuid())
+  id                  String    @id @default(cuid())
+  customerId          String
+  leadId              String
+  vehicleId           String
+  status              String    @default("PENDING")
+  lenderName          String?
+  requestedAmount     Decimal
+  approvedAmount      Decimal?
+  interestRate        Decimal?
+  termMonths          Int?
+  monthlyPayment      Decimal?
+  downPayment         Decimal?
+  annualIncome        Decimal?
+  employmentType      String?
+  yearsEmployed       Int?
+  creditScore         Int?
+  applicationData     Json?
+  applicationId       String?
+  submittedAt         DateTime?
+  approvedAt          DateTime?
+  isActive            Boolean   @default(true)
   
-  // Participants
-  customerId  String
-  leadId      String?
-  vehicleId   String?
-  
-  // Application Details
-  status      FinancingStatus @default(PENDING)
-  lenderName  String?
-  
-  // Loan Details
-  requestedAmount Float
-  approvedAmount  Float?
-  interestRate    Float?
-  termMonths      Int?
-  monthlyPayment  Float?
-  downPayment     Float?
-  
-  // Customer Financials
-  annualIncome    Float?
-  employmentType  String?
-  yearsEmployed   Float?
-  creditScore     Int?
-  
-  // Application Data
-  applicationData Json? // Store full application details
-  
-  // External References
-  applicationId   String? // Lender's application ID
-  contractNumber  String? // Final contract number
-  
-  // Timestamps
-  submittedAt DateTime?
-  approvedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  // Relations with proper naming
-  customer User     @relation("CustomerFinancing", fields: [customerId], references: [id])
-  lead     Lead?    @relation(fields: [leadId], references: [id])
-  vehicle  Vehicle? @relation(fields: [vehicleId], references: [id])
+  // Relations
+  customer            User      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  lead                Lead      @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  vehicle             Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
 
   @@map("financing_applications")
 }
 
-// ============================================================================
-// COMMUNICATION TRACKING
-// ============================================================================
+// Communication model
 model Communication {
-  id          String            @id @default(cuid())
+  id           String   @id @default(cuid())
+  customerId   String
+  leadId       String
+  type         String
+  subject      String?
+  content      String
+  direction    String   @default("OUTBOUND")
+  duration     Int?
+  outcome      String?
+  isActive     Boolean  @default(true)
   
-  // Participants
-  customerId  String?
-  leadId      String?
-  vehicleId   String?
-  salesRepId  String?
-  
-  // Communication Details
-  type        CommunicationType
-  direction   String            // inbound, outbound
-  subject     String?
-  content     String
-  
-  // Channel Details
-  phoneNumber String?
-  emailAddress String?
-  platform    String? // SMS, WhatsApp, Facebook, etc.
-  
-  // Tracking
-  isRead      Boolean @default(false)
-  readAt      DateTime?
-  responseTime Int? // Minutes to respond
-  
-  // Attachments
-  attachments String[] // URLs to files
-  
-  // Timestamps
-  sentAt    DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  // Relations with proper naming
-  customer User?    @relation("CustomerCommunication", fields: [customerId], references: [id])
-  lead     Lead?    @relation(fields: [leadId], references: [id])
-  vehicle  Vehicle? @relation(fields: [vehicleId], references: [id])
-  salesRep User?    @relation("SalesRepCommunication", fields: [salesRepId], references: [id])
+  // Relations
+  customer     User     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Restrict)
 
   @@map("communications")
 }
 
-// ============================================================================
-// VEHICLE HISTORY TRACKING
-// ============================================================================
+// Vehicle History model
 model VehicleHistory {
-  id          String @id @default(cuid())
+  id           String   @id @default(cuid())
+  vehicleId    String
+  eventType    String
+  description  String
+  eventDate    DateTime
+  metadata     Json?
+  isActive     Boolean  @default(true)
   
-  vehicleId   String
-  
-  // Event Details
-  eventType   String // status_change, price_change, inspection, etc.
-  oldValue    String?
-  newValue    String?
-  description String?
-  
-  // User tracking
-  userId      String?
-  userEmail   String?
-  
-  // Timestamps
-  createdAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relations
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@map("vehicle_history")
 }
 
-// ============================================================================
-// ENUMS
-// ============================================================================
+// Enums
 enum UserRole {
-  CUSTOMER
-  SALES_REP
-  SALES_MANAGER
-  FINANCE_MANAGER
   ADMIN
-  SUPER_ADMIN
-}
-
-enum VehicleCondition {
-  NEW
-  USED
-  CERTIFIED_PRE_OWNED
-  FAIR
-  POOR
-}
-
-enum VehicleStatus {
-  AVAILABLE
-  PENDING
-  HOLD
-  SOLD
-  UNAVAILABLE
-  IN_TRANSIT
-  IN_SERVICE
-}
-
-enum LeadStatus {
-  NEW
-  CONTACTED
-  QUALIFIED
-  APPOINTMENT_SCHEDULED
-  TEST_DRIVE_COMPLETED
-  NEGOTIATING
-  FINANCING_PENDING
-  PAPERWORK
-  CLOSED_WON
-  CLOSED_LOST
-  FOLLOW_UP
-  UNRESPONSIVE
-}
-
-enum LeadPriority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-  HOT
-}
-
-enum AppointmentType {
-  CONSULTATION
-  TEST_DRIVE
-  VEHICLE_INSPECTION
-  FINANCING_MEETING
-  PAPERWORK_SIGNING
-  DELIVERY
-  FOLLOW_UP
-  SERVICE_APPOINTMENT
-}
-
-enum AppointmentStatus {
-  SCHEDULED
-  CONFIRMED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-  NO_SHOW
-  RESCHEDULED
-}
-
-enum TestDriveStatus {
-  SCHEDULED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-  NO_SHOW
-}
-
-enum FinancingStatus {
-  PENDING
-  SUBMITTED
-  UNDER_REVIEW
-  APPROVED
-  DECLINED
-  CONDITIONAL_APPROVAL
-  FUNDED
-  CANCELLED
-}
-
-enum CommunicationType {
-  EMAIL
-  PHONE_CALL
-  SMS
-  CHAT
-  IN_PERSON
-  VOICEMAIL
-  SOCIAL_MEDIA
-  WEBSITE_FORM
+  SALES_REP
+  CUSTOMER
+  MANAGER
 }

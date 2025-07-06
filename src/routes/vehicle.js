@@ -1,10 +1,11 @@
+/* eslint-disable operator-linebreak */
 /* eslint-disable indent */
 /* eslint-disable comma-dangle */
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable consistent-return */
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
-const { query, validationResult } = require('express-validator');
+const { query, body, validationResult } = require('express-validator');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -193,7 +194,7 @@ router.get(
               currency: 'USD',
               minimumFractionDigits: 0,
             }).format(vehicle.price),
-            mileageFormatted: vehicle.mileage.toLocaleString(),
+            mileageFormatted: vehicle.mileage != null ? vehicle.mileage.toLocaleString() : null,
             fuelEconomy:
               vehicle.mpgCity && vehicle.mpgHighway
                 ? `${vehicle.mpgCity}/${vehicle.mpgHighway} mpg`
@@ -317,7 +318,7 @@ router.get('/:id', async (req, res) => {
             minimumFractionDigits: 0,
           }).format(vehicle.msrp)
         : null,
-      mileageFormatted: vehicle.mileage.toLocaleString(),
+      mileageFormatted: vehicle.mileage != null ? vehicle.mileage.toLocaleString() : null,
       fuelEconomy: {
         city: vehicle.mpgCity,
         highway: vehicle.mpgHighway,
@@ -418,7 +419,7 @@ router.get('/featured/list', async (req, res) => {
             currency: 'USD',
             minimumFractionDigits: 0,
           }).format(vehicle.price),
-          mileageFormatted: vehicle.mileage.toLocaleString(),
+          mileageFormatted: vehicle.mileage != null ? vehicle.mileage.toLocaleString() : null,
           mainImage: vehicle.images?.[0] || null,
           featuredBadge: true,
         })),
@@ -436,5 +437,594 @@ router.get('/featured/list', async (req, res) => {
     });
   }
 });
+
+// Additional endpoints to add to your existing vehicle.js backend file
+
+// ============================================================================
+// POST /api/vehicles - Create New Vehicle
+// ============================================================================
+router.post(
+  '/',
+  [
+    body('vin').optional().isLength({ min: 17, max: 17 }),
+    body('make').notEmpty().withMessage('Make is required'),
+    body('model').notEmpty().withMessage('Model is required'),
+    body('year')
+      .isInt({ min: 1900, max: new Date().getFullYear() + 1 })
+      .withMessage('Valid year is required'),
+    body('price').isFloat({ min: 0 }).withMessage('Valid price is required'),
+    body('mileage').isInt({ min: 0 }).withMessage('Valid mileage is required'),
+    body('condition').optional().isIn(['NEW', 'USED', 'CERTIFIED_PRE_OWNED', 'FAIR', 'POOR']),
+    body('status')
+      .optional()
+      .isIn(['AVAILABLE', 'PENDING', 'HOLD', 'SOLD', 'UNAVAILABLE', 'IN_TRANSIT', 'IN_SERVICE']),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          errors: errors.array(),
+          company: 'Rides Automotors',
+        });
+      }
+
+      const {
+        vin,
+        stockNumber,
+        make,
+        model,
+        year,
+        trim,
+        mileage,
+        price,
+        msrp,
+        costBasis,
+        condition = 'USED',
+        status = 'AVAILABLE',
+        exterior,
+        interior,
+        engine,
+        transmission,
+        drivetrain,
+        fuelType,
+        mpgCity,
+        mpgHighway,
+        doors,
+        seats,
+        features = [],
+        packages = [],
+        options = [],
+        images = [],
+        videos = [],
+        documents = [],
+        description,
+        highlights = [],
+        keywords = [],
+        inspectionDate,
+        inspectionNotes,
+        accidentHistory,
+        serviceHistory,
+        previousOwners,
+        location,
+        isFeatured = false,
+        isOnline = true,
+        displayOrder,
+      } = req.body;
+
+      // Check if VIN already exists
+      if (vin && vin.trim()) {
+        const existingVehicle = await prisma.vehicle.findUnique({
+          where: { vin: vin.toUpperCase() },
+          select: { id: true, vin: true },
+        });
+
+        if (existingVehicle) {
+          return res.status(409).json({
+            success: false,
+            error: 'Vehicle with this VIN already exists',
+            company: 'Rides Automotors',
+            conflictingVehicle: {
+              id: existingVehicle.id,
+              vin: existingVehicle.vin,
+            },
+          });
+        }
+      }
+
+      // Generate stock number if not provided
+      const finalStockNumber =
+        stockNumber ||
+        `${make.substring(0, 3).toUpperCase()}${year}${String(Date.now()).slice(-4)}`;
+
+      // Create the vehicle
+      const vehicle = await prisma.vehicle.create({
+        data: {
+          ...(vin ? { vin: vin.toUpperCase() } : {}),
+          stockNumber: finalStockNumber,
+          make: make.trim(),
+          model: model.trim(),
+          year: parseInt(year, 10),
+          trim: trim?.trim(),
+          mileage: parseInt(mileage, 10),
+          price: parseFloat(price),
+          msrp: msrp ? parseFloat(msrp) : null,
+          costBasis: costBasis ? parseFloat(costBasis) : null,
+          condition,
+          status,
+          exterior: exterior?.trim(),
+          interior: interior?.trim(),
+          engine: engine?.trim(),
+          transmission: transmission?.trim(),
+          drivetrain: drivetrain?.trim(),
+          fuelType: fuelType?.trim(),
+          mpgCity: mpgCity ? parseInt(mpgCity, 10) : null,
+          mpgHighway: mpgHighway ? parseInt(mpgHighway, 10) : null,
+          mpgCombined:
+            mpgCity && mpgHighway
+              ? Math.round((parseInt(mpgCity, 10) + parseInt(mpgHighway, 10)) / 2)
+              : null,
+          doors: doors ? parseInt(doors, 10) : null,
+          seats: seats ? parseInt(seats, 10) : null,
+          features: Array.isArray(features) ? features : [],
+          packages: Array.isArray(packages) ? packages : [],
+          options: Array.isArray(options) ? options : [],
+          images: Array.isArray(images) ? images : [],
+          videos: Array.isArray(videos) ? videos : [],
+          documents: Array.isArray(documents) ? documents : [],
+          description: description?.trim(),
+          highlights: Array.isArray(highlights) ? highlights : [],
+          keywords: Array.isArray(keywords) ? keywords : [],
+          inspectionDate: inspectionDate ? new Date(inspectionDate) : null,
+          inspectionNotes: inspectionNotes?.trim(),
+          accidentHistory: accidentHistory?.trim(),
+          serviceHistory: serviceHistory?.trim(),
+          previousOwners: previousOwners ? parseInt(previousOwners, 10) : null,
+          location: location?.trim(),
+          isFeatured: Boolean(isFeatured),
+          isOnline: Boolean(isOnline),
+          isActive: true,
+          displayOrder: displayOrder ? parseInt(displayOrder, 10) : null,
+        },
+      });
+
+      // Format the created vehicle for response
+      const formattedVehicle = {
+        ...vehicle,
+        priceFormatted: new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 0,
+        }).format(vehicle.price),
+        msrpFormatted: vehicle.msrp
+          ? new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD',
+              minimumFractionDigits: 0,
+            }).format(vehicle.msrp)
+          : null,
+        mileageFormatted: vehicle.mileage != null ? vehicle.mileage.toLocaleString() : null,
+        fuelEconomy:
+          vehicle.mpgCity && vehicle.mpgHighway
+            ? `${vehicle.mpgCity}/${vehicle.mpgHighway} mpg`
+            : null,
+        mainImage: vehicle.images?.[0] || null,
+      };
+
+      res.status(201).json({
+        success: true,
+        data: {
+          vehicle: formattedVehicle,
+          message: 'Vehicle created successfully',
+        },
+        company: 'Rides Automotors',
+        timestamp: new Date().toISOString(),
+      });
+
+      // Log vehicle creation
+      logger.info('New vehicle created', {
+        vehicleId: vehicle.id,
+        vin: vehicle.vin,
+        make: vehicle.make,
+        model: vehicle.model,
+        year: vehicle.year,
+        price: vehicle.price,
+      });
+    } catch (error) {
+      logger.error('Error creating vehicle:', error);
+
+      // Handle unique constraint violations
+      if (error.code === 'P2002') {
+        return res.status(409).json({
+          success: false,
+          error: 'Vehicle with this VIN or stock number already exists',
+          company: 'Rides Automotors',
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create vehicle',
+        company: 'Rides Automotors',
+      });
+    }
+  }
+);
+
+// ============================================================================
+// PUT /api/vehicles/:id - Update Vehicle
+// ============================================================================
+router.put(
+  '/:id',
+  [
+    body('vin').optional().isLength({ min: 17, max: 17 }),
+    body('make').optional().notEmpty().withMessage('Make cannot be empty'),
+    body('model').optional().notEmpty().withMessage('Model cannot be empty'),
+    body('year')
+      .optional()
+      .isInt({ min: 1900, max: new Date().getFullYear() + 1 })
+      .withMessage('Valid year is required'),
+    body('price').optional().isFloat({ min: 0 }).withMessage('Valid price is required'),
+    body('mileage').optional().isInt({ min: 0 }).withMessage('Valid mileage is required'),
+    body('condition').optional().isIn(['NEW', 'USED', 'CERTIFIED_PRE_OWNED', 'FAIR', 'POOR']),
+    body('status')
+      .optional()
+      .isIn(['AVAILABLE', 'PENDING', 'HOLD', 'SOLD', 'UNAVAILABLE', 'IN_TRANSIT', 'IN_SERVICE']),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          errors: errors.array(),
+          company: 'Rides Automotors',
+        });
+      }
+
+      const { id } = req.params;
+      const updateData = { ...req.body };
+
+      // Check if vehicle exists
+      const existingVehicle = await prisma.vehicle.findUnique({
+        where: { id },
+      });
+
+      if (!existingVehicle) {
+        return res.status(404).json({
+          success: false,
+          error: 'Vehicle not found',
+          company: 'Rides Automotors',
+        });
+      }
+
+      // If VIN is being updated, check for conflicts
+      if (updateData.vin && updateData.vin !== existingVehicle.vin) {
+        const conflictingVehicle = await prisma.vehicle.findUnique({
+          where: { vin: updateData.vin.toUpperCase() },
+          select: { id: true, vin: true },
+        });
+
+        if (conflictingVehicle) {
+          return res.status(409).json({
+            success: false,
+            error: 'Another vehicle with this VIN already exists',
+            company: 'Rides Automotors',
+            conflictingVehicle: {
+              id: conflictingVehicle.id,
+              vin: conflictingVehicle.vin,
+            },
+          });
+        }
+      }
+
+      // Process update data
+      const processedData = {};
+      Object.keys(updateData).forEach((key) => {
+        const value = updateData[key];
+
+        switch (key) {
+          case 'vin':
+            if (value) processedData[key] = value.toUpperCase();
+            break;
+          case 'make':
+          case 'model':
+          case 'trim':
+          case 'exterior':
+          case 'interior':
+          case 'engine':
+          case 'transmission':
+          case 'drivetrain':
+          case 'fuelType':
+          case 'description':
+          case 'inspectionNotes':
+          case 'accidentHistory':
+          case 'serviceHistory':
+          case 'location':
+            if (value !== undefined) processedData[key] = value?.trim();
+            break;
+          case 'year':
+          case 'mileage':
+          case 'doors':
+          case 'seats':
+          case 'mpgCity':
+          case 'mpgHighway':
+          case 'previousOwners':
+          case 'displayOrder':
+            if (value !== undefined) processedData[key] = value ? parseInt(value, 10) : null;
+            break;
+          case 'price':
+          case 'msrp':
+          case 'costBasis':
+            if (value !== undefined) processedData[key] = value ? parseFloat(value) : null;
+            break;
+          case 'isFeatured':
+          case 'isOnline':
+          case 'isActive':
+            if (value !== undefined) processedData[key] = Boolean(value);
+            break;
+          case 'features':
+          case 'packages':
+          case 'options':
+          case 'images':
+          case 'videos':
+          case 'documents':
+          case 'highlights':
+          case 'keywords':
+            if (value !== undefined) processedData[key] = Array.isArray(value) ? value : [];
+            break;
+          case 'inspectionDate':
+            if (value) processedData[key] = new Date(value);
+            break;
+          default:
+            if (value !== undefined) processedData[key] = value;
+        }
+      });
+
+      // Calculate combined MPG if both city and highway are provided
+      if (processedData.mpgCity && processedData.mpgHighway) {
+        processedData.mpgCombined = Math.round(
+          (processedData.mpgCity + processedData.mpgHighway) / 2
+        );
+      }
+
+      // Update the vehicle
+      const updatedVehicle = await prisma.vehicle.update({
+        where: { id },
+        data: processedData,
+      });
+
+      // Format the updated vehicle for response
+      const formattedVehicle = {
+        ...updatedVehicle,
+        priceFormatted: new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 0,
+        }).format(updatedVehicle.price),
+        msrpFormatted: updatedVehicle.msrp
+          ? new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD',
+              minimumFractionDigits: 0,
+            }).format(updatedVehicle.msrp)
+          : null,
+        mileageFormatted:
+          updatedVehicle.mileage != null ? updatedVehicle.mileage.toLocaleString() : null,
+        fuelEconomy:
+          updatedVehicle.mpgCity && updatedVehicle.mpgHighway
+            ? `${updatedVehicle.mpgCity}/${updatedVehicle.mpgHighway} mpg`
+            : null,
+        mainImage: updatedVehicle.images?.[0] || null,
+      };
+
+      res.json({
+        success: true,
+        data: formattedVehicle,
+        company: 'Rides Automotors',
+        timestamp: new Date().toISOString(),
+      });
+
+      // Log vehicle update
+      logger.info('Vehicle updated', {
+        vehicleId: updatedVehicle.id,
+        vin: updatedVehicle.vin,
+        changedFields: Object.keys(processedData),
+      });
+    } catch (error) {
+      logger.error('Error updating vehicle:', error);
+
+      // Handle unique constraint violations
+      if (error.code === 'P2002') {
+        return res.status(409).json({
+          success: false,
+          error: 'Vehicle with this VIN or stock number already exists',
+          company: 'Rides Automotors',
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update vehicle',
+        company: 'Rides Automotors',
+      });
+    }
+  }
+);
+
+// ============================================================================
+// DELETE /api/vehicles/:id - Delete Vehicle (Soft Delete)
+// ============================================================================
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if vehicle exists
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        vin: true,
+        make: true,
+        model: true,
+        year: true,
+        isActive: true,
+        leads: {
+          where: { isActive: true },
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!vehicle) {
+      return res.status(404).json({
+        success: false,
+        error: 'Vehicle not found',
+        company: 'Rides Automotors',
+      });
+    }
+
+    // Check if vehicle has active leads
+    if (vehicle.leads.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot delete vehicle with active leads',
+        company: 'Rides Automotors',
+        activeLeads: vehicle.leads.length,
+        suggestion: 'Please resolve or transfer active leads before deleting this vehicle',
+      });
+    }
+
+    // Soft delete - set isActive to false instead of actual deletion
+    const deletedVehicle = await prisma.vehicle.update({
+      where: { id },
+      data: {
+        isActive: false,
+        status: 'UNAVAILABLE',
+        isOnline: false,
+        deletedAt: new Date(),
+      },
+      select: {
+        id: true,
+        vin: true,
+        make: true,
+        model: true,
+        year: true,
+        isActive: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        message: 'Vehicle deleted successfully',
+        vehicle: deletedVehicle,
+      },
+      company: 'Rides Automotors',
+      timestamp: new Date().toISOString(),
+    });
+
+    // Log vehicle deletion
+    logger.info('Vehicle deleted (soft delete)', {
+      vehicleId: vehicle.id,
+      vin: vehicle.vin,
+      make: vehicle.make,
+      model: vehicle.model,
+      year: vehicle.year,
+    });
+  } catch (error) {
+    logger.error('Error deleting vehicle:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete vehicle',
+      company: 'Rides Automotors',
+    });
+  }
+});
+
+// ============================================================================
+// PATCH /api/vehicles/:id/status - Update Vehicle Status
+// ============================================================================
+router.patch(
+  '/:id/status',
+  [
+    body('status')
+      .isIn(['AVAILABLE', 'PENDING', 'HOLD', 'SOLD', 'UNAVAILABLE', 'IN_TRANSIT', 'IN_SERVICE'])
+      .withMessage('Invalid status'),
+    body('soldPrice').optional().isFloat({ min: 0 }).withMessage('Valid sold price required'),
+    body('soldDate').optional().isISO8601().withMessage('Valid sold date required'),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          errors: errors.array(),
+          company: 'Rides Automotors',
+        });
+      }
+
+      const { id } = req.params;
+      const { status, soldPrice, soldDate } = req.body;
+
+      const updateData = { status };
+
+      // If marking as sold, handle sold data
+      if (status === 'SOLD') {
+        updateData.soldDate = soldDate ? new Date(soldDate) : new Date();
+        if (soldPrice) {
+          updateData.soldPrice = parseFloat(soldPrice);
+        }
+        updateData.isOnline = false; // Remove from online listings
+      }
+
+      // If changing from sold to available, clear sold data
+      if (status === 'AVAILABLE') {
+        updateData.soldDate = null;
+        updateData.soldPrice = null;
+        updateData.isOnline = true; // Make available online
+      }
+
+      const vehicle = await prisma.vehicle.update({
+        where: { id },
+        data: updateData,
+      });
+
+      res.json({
+        success: true,
+        data: vehicle,
+        company: 'Rides Automotors',
+        timestamp: new Date().toISOString(),
+      });
+
+      logger.info('Vehicle status updated', {
+        vehicleId: id,
+        newStatus: status,
+        soldPrice: soldPrice || null,
+      });
+    } catch (error) {
+      logger.error('Error updating vehicle status:', error);
+
+      if (error.code === 'P2025') {
+        return res.status(404).json({
+          success: false,
+          error: 'Vehicle not found',
+          company: 'Rides Automotors',
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update vehicle status',
+        company: 'Rides Automotors',
+      });
+    }
+  }
+);
+
+// Don't forget to add the required imports at the top of your vehicle.js file:
+// const { body, validationResult } = require('express-validator');
 
 module.exports = router;

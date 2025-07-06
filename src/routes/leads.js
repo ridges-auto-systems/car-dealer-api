@@ -34,6 +34,8 @@ router.post(
       .isIn(['immediately', 'this_week', 'this_month', 'next_month', 'just_browsing']),
     body('budgetRange').optional().isString(),
     body('source').optional().isString(),
+    body('preferredContact').optional().isIn(['phone', 'email', 'text']),
+    body('bestTimeToCall').optional().isIn(['morning', 'afternoon', 'evening']),
   ],
   async (req, res) => {
     try {
@@ -59,6 +61,8 @@ router.post(
         budgetRange,
         source = 'website',
         tradeVehicleInfo,
+        preferredContact,
+        bestTimeToCall,
       } = req.body;
 
       // Check if customer exists
@@ -78,7 +82,7 @@ router.post(
             phone,
             password: hashedPassword, // Temporary password
             role: 'CUSTOMER',
-            preferredContact: phone ? 'phone' : 'email',
+            preferredContact: preferredContact || (phone ? 'phone' : 'email'),
             marketingOptIn: true,
           },
         });
