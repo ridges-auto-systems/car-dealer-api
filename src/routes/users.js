@@ -39,7 +39,7 @@ router.get(
         return res.status(400).json({
           success: false,
           errors: errors.array(),
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -125,7 +125,7 @@ router.get(
             inactiveUsers: users.filter((u) => !u.isActive).length,
           },
         },
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
@@ -133,7 +133,7 @@ router.get(
       res.status(500).json({
         success: false,
         error: 'Failed to fetch users',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
   }
@@ -169,7 +169,7 @@ router.get('/:id', auth, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => 
       return res.status(404).json({
         success: false,
         error: 'User not found',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
 
@@ -181,7 +181,7 @@ router.get('/:id', auth, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => 
         roleBadge: getRoleBadge(user.role),
         statusBadge: getStatusBadge(user.isActive),
       },
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -189,7 +189,7 @@ router.get('/:id', auth, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => 
     res.status(500).json({
       success: false,
       error: 'Failed to fetch user details',
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
     });
   }
 });
@@ -223,7 +223,7 @@ router.post(
         return res.status(400).json({
           success: false,
           errors: errors.array(),
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -248,7 +248,7 @@ router.post(
         return res.status(409).json({
           success: false,
           error: 'User with this email already exists',
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -292,7 +292,7 @@ router.post(
           },
         },
         message: 'User created successfully',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
         timestamp: new Date().toISOString(),
       });
 
@@ -306,7 +306,7 @@ router.post(
       res.status(500).json({
         success: false,
         error: 'Failed to create user',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
   }
@@ -335,7 +335,7 @@ router.put(
         return res.status(400).json({
           success: false,
           errors: errors.array(),
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -354,7 +354,7 @@ router.put(
         return res.status(404).json({
           success: false,
           error: 'User not found',
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -368,7 +368,7 @@ router.put(
           return res.status(409).json({
             success: false,
             error: 'Email already in use by another user',
-            company: 'Rides Automotors',
+            company: 'Ridges Automotors',
           });
         }
       }
@@ -400,7 +400,7 @@ router.put(
           },
         },
         message: 'User updated successfully',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
         timestamp: new Date().toISOString(),
       });
 
@@ -414,7 +414,7 @@ router.put(
       res.status(500).json({
         success: false,
         error: 'Failed to update user',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
   }
@@ -449,7 +449,7 @@ router.patch(
         success: true,
         data: { user },
         message: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
         timestamp: new Date().toISOString(),
       });
 
@@ -463,7 +463,7 @@ router.patch(
       res.status(500).json({
         success: false,
         error: 'Failed to update user status',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
   }

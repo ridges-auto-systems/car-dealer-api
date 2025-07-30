@@ -40,7 +40,7 @@ router.get(
         return res.status(400).json({
           success: false,
           errors: errors.array(),
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -239,7 +239,7 @@ router.get(
             sortedBy: `${sortBy} ${sortOrder}`,
           },
         },
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
         timestamp: new Date().toISOString(),
       });
 
@@ -255,7 +255,7 @@ router.get(
       res.status(500).json({
         success: false,
         error: 'Failed to fetch vehicles',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
   }
@@ -283,7 +283,7 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({
         success: false,
         error: 'Vehicle not found',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
 
@@ -292,7 +292,7 @@ router.get('/:id', async (req, res) => {
       return res.status(410).json({
         success: false,
         error: 'Vehicle is no longer available',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
         vehicle: {
           id: vehicle.id,
           make: vehicle.make,
@@ -356,7 +356,7 @@ router.get('/:id', async (req, res) => {
     res.json({
       success: true,
       data: formattedVehicle,
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
       timestamp: new Date().toISOString(),
     });
 
@@ -373,7 +373,7 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch vehicle details',
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
     });
   }
 });
@@ -425,7 +425,7 @@ router.get('/featured/list', async (req, res) => {
         })),
         count: featuredVehicles.length,
       },
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -433,7 +433,7 @@ router.get('/featured/list', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch featured vehicles',
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
     });
   }
 });
@@ -466,7 +466,7 @@ router.post(
         return res.status(400).json({
           success: false,
           errors: errors.array(),
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -524,7 +524,7 @@ router.post(
           return res.status(409).json({
             success: false,
             error: 'Vehicle with this VIN already exists',
-            company: 'Rides Automotors',
+            company: 'Ridges Automotors',
             conflictingVehicle: {
               id: existingVehicle.id,
               vin: existingVehicle.vin,
@@ -618,7 +618,7 @@ router.post(
           vehicle: formattedVehicle,
           message: 'Vehicle created successfully',
         },
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
         timestamp: new Date().toISOString(),
       });
 
@@ -639,14 +639,14 @@ router.post(
         return res.status(409).json({
           success: false,
           error: 'Vehicle with this VIN or stock number already exists',
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
       res.status(500).json({
         success: false,
         error: 'Failed to create vehicle',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
   }
@@ -679,7 +679,7 @@ router.put(
         return res.status(400).json({
           success: false,
           errors: errors.array(),
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -695,7 +695,7 @@ router.put(
         return res.status(404).json({
           success: false,
           error: 'Vehicle not found',
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -710,7 +710,7 @@ router.put(
           return res.status(409).json({
             success: false,
             error: 'Another vehicle with this VIN already exists',
-            company: 'Rides Automotors',
+            company: 'Ridges Automotors',
             conflictingVehicle: {
               id: conflictingVehicle.id,
               vin: conflictingVehicle.vin,
@@ -822,7 +822,7 @@ router.put(
       res.json({
         success: true,
         data: formattedVehicle,
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
         timestamp: new Date().toISOString(),
       });
 
@@ -840,14 +840,14 @@ router.put(
         return res.status(409).json({
           success: false,
           error: 'Vehicle with this VIN or stock number already exists',
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
       res.status(500).json({
         success: false,
         error: 'Failed to update vehicle',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
   }
@@ -881,7 +881,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({
         success: false,
         error: 'Vehicle not found',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
 
@@ -890,7 +890,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Cannot delete vehicle with active leads',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
         activeLeads: vehicle.leads.length,
         suggestion: 'Please resolve or transfer active leads before deleting this vehicle',
       });
@@ -921,7 +921,7 @@ router.delete('/:id', async (req, res) => {
         message: 'Vehicle deleted successfully',
         vehicle: deletedVehicle,
       },
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
       timestamp: new Date().toISOString(),
     });
 
@@ -938,7 +938,7 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to delete vehicle',
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
     });
   }
 });
@@ -962,7 +962,7 @@ router.patch(
         return res.status(400).json({
           success: false,
           errors: errors.array(),
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -995,7 +995,7 @@ router.patch(
       res.json({
         success: true,
         data: vehicle,
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
         timestamp: new Date().toISOString(),
       });
 
@@ -1011,14 +1011,14 @@ router.patch(
         return res.status(404).json({
           success: false,
           error: 'Vehicle not found',
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
       res.status(500).json({
         success: false,
         error: 'Failed to update vehicle status',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
   }

@@ -33,9 +33,9 @@ router.get('/', async (req, res) => {
     ]);
 
     res.json({
-      message: 'Rides Automotors API',
+      message: 'Ridges Automotors API',
       version: '1.0.0',
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
       tagline: 'Connecting customers with quality vehicles',
       status: 'Active',
       database: 'Connected',
@@ -86,9 +86,9 @@ router.get('/', async (req, res) => {
   } catch (error) {
     logger.error('Error fetching API info:', error);
     res.json({
-      message: 'Rides Automotors API',
+      message: 'Ridges Automotors API',
       version: '1.0.0',
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
       status: 'Active',
       database: 'Error',
       timestamp: new Date().toISOString(),
@@ -101,7 +101,7 @@ router.get('/', async (req, res) => {
 // ============================================================================
 router.get('/company', (req, res) => {
   res.json({
-    name: process.env.COMPANY_NAME || 'Rides Automotors',
+    name: process.env.COMPANY_NAME || 'Ridges Automotors',
     tagline: 'Connecting customers with quality vehicles',
     description:
       'Modern automotive dealership focused on providing exceptional customer experiences through technology-driven solutions.',
@@ -133,10 +133,10 @@ router.get('/company', (req, res) => {
     contact: {
       address: process.env.DEALERSHIP_ADDRESS || '123 Auto Plaza Drive, Your City, State 12345',
       phone: process.env.DEALERSHIP_PHONE || '(555) 123-4567',
-      email: process.env.COMPANY_EMAIL || 'info@ridesautomotors.com',
-      website: process.env.FRONTEND_URL || 'https://ridesautomotors.com',
-      salesEmail: 'sales@ridesautomotors.com',
-      supportEmail: 'support@ridesautomotors.com',
+      email: process.env.COMPANY_EMAIL || 'info@ridgesautomotors.com',
+      website: process.env.FRONTEND_URL || 'https://ridgesautomotors.com',
+      salesEmail: 'sales@ridgesautomotors.com',
+      supportEmail: 'support@ridgesautomotors.com',
     },
     hours: {
       monday: process.env.BUSINESS_HOURS_MON_FRI || '9:00 AM - 8:00 PM',
@@ -157,10 +157,10 @@ router.get('/company', (req, res) => {
       'Customer Satisfaction Award Winner',
     ],
     socialMedia: {
-      facebook: 'https://facebook.com/ridesautomotors',
-      instagram: 'https://instagram.com/ridesautomotors',
-      twitter: 'https://twitter.com/ridesautomotors',
-      youtube: 'https://youtube.com/ridesautomotors',
+      facebook: 'https://facebook.com/ridgesautomotors',
+      instagram: 'https://instagram.com/ridgesautomotors',
+      twitter: 'https://twitter.com/ridgesautomotors',
+      youtube: 'https://youtube.com/ridgesautomotors',
     },
     timestamp: new Date().toISOString(),
   });

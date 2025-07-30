@@ -17,7 +17,7 @@ const auth = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         error: 'Access denied. No token provided.',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
 
@@ -41,7 +41,7 @@ const auth = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         error: 'Invalid token or user account deactivated',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
 
@@ -52,7 +52,7 @@ const auth = async (req, res, next) => {
     res.status(401).json({
       success: false,
       error: 'Invalid token',
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
     });
   }
 };
@@ -65,7 +65,7 @@ const authorize =
       return res.status(401).json({
         success: false,
         error: 'Authentication required',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
 
@@ -74,7 +74,7 @@ const authorize =
         success: false,
         error: `Access denied. Required role: ${roles.join(' or ')}`,
         userRole: req.user.role,
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
     next();

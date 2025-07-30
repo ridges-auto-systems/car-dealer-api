@@ -5,7 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
-// const rateLimit = require('express-rate-limit');
+const rateLimit = require('express-rate-limit');
 const { PrismaClient } = require('@prisma/client');
 require('dotenv').config();
 
@@ -26,7 +26,7 @@ async function testDatabaseConnection() {
   try {
     await prisma.$connect();
     logger.info('✅ Database connected successfully', {
-      database: 'Rides Automotors',
+      database: 'Ridges Automotors',
       provider: 'PostgreSQL',
     });
     return true;
@@ -57,8 +57,8 @@ app.use(
   cors({
     origin: process.env.CORS_ORIGIN?.split(',') || [
       'http://localhost:3000',
-      'https://ridesautomotors.com',
-      'https://www.ridesautomotors.com',
+      'https://Ridgesautomotors.com',
+      'https://www.Ridgesautomotors.com',
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -67,26 +67,17 @@ app.use(
 );
 
 // Rate limiting
-// In your app.js, find the rate limiting section and comment it out:
-
-// ============================================================================
-// RATE LIMITING - TEMPORARILY DISABLED FOR DEBUGGING
-// ============================================================================
-/*
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
   message: {
     error: 'Too many requests from this IP, please try again later.',
-    company: 'Rides Automotors',
+    company: 'Ridges Automotors',
   },
   standardHeaders: true,
   legacyHeaders: false,
 });
 app.use('/api/', limiter);
-*/
-
-console.log('⚠️ Rate limiting disabled for debugging infinite loop issue');
 
 // ============================================================================
 // GENERAL MIDDLEWARE
@@ -101,7 +92,7 @@ app.use((req, res, next) => {
     ip: req.ip,
     userAgent: req.get('User-Agent'),
     timestamp: new Date().toISOString(),
-    company: 'Rides Automotors',
+    company: 'Ridges Automotors',
   });
   next();
 });
@@ -117,7 +108,7 @@ app.get('/health', async (req, res) => {
 
   res.json({
     status: 'OK',
-    service: 'Rides Automotors API',
+    service: 'Ridges Automotors API',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
     version: '1.0.0',
@@ -128,7 +119,7 @@ app.get('/health', async (req, res) => {
       status: dbStatus ? 'healthy' : 'disconnected',
     },
     company: {
-      name: 'Rides Automotors',
+      name: 'Ridges Automotors',
       tagline: 'Connecting customers with quality vehicles',
     },
   });
@@ -161,7 +152,7 @@ app.get('/api/stats', async (req, res) => {
           averagePrice: await calculateAveragePrice(),
         },
       },
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -169,7 +160,7 @@ app.get('/api/stats', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch statistics',
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
     });
   }
 });
@@ -202,9 +193,9 @@ async function calculateAveragePrice() {
 // Root endpoint with enhanced company info
 app.get('/', (req, res) => {
   res.json({
-    message: 'Rides Automotors API',
+    message: 'Ridges Automotors API',
     tagline: 'Connecting customers with quality vehicles',
-    company: 'Rides Automotors',
+    company: 'Ridges Automotors',
     version: '1.0.0',
     status: 'Active',
     features: [
@@ -223,9 +214,9 @@ app.get('/', (req, res) => {
       company: '/api/company',
     },
     contact: {
-      email: process.env.COMPANY_EMAIL || 'info@ridesautomotors.com',
+      email: process.env.COMPANY_EMAIL || 'info@Ridgesautomotors.com',
       phone: process.env.DEALERSHIP_PHONE || '(555) 123-4567',
-      website: process.env.FRONTEND_URL || 'https://ridesautomotors.com',
+      website: process.env.FRONTEND_URL || 'https://Ridgesautomotors.com',
     },
   });
 });
@@ -241,7 +232,7 @@ app.use('*', (req, res) => {
     error: 'Route not found',
     path: req.originalUrl,
     method: req.method,
-    company: 'Rides Automotors',
+    company: 'Ridges Automotors',
     message: 'The requested endpoint does not exist.',
     availableEndpoints: ['/api/vehicles', '/api/leads', '/health', '/api/stats'],
   });
@@ -260,11 +251,11 @@ async function startServer() {
     }
 
     const server = app.listen(PORT, () => {
-      logger.info(`🚗 Rides Automotors API running on port ${PORT}`, {
+      logger.info(`🚗 Ridges Automotors API running on port ${PORT}`, {
         environment: process.env.NODE_ENV,
         port: PORT,
         database: dbConnected ? 'connected' : 'disconnected',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
 
       if (process.env.NODE_ENV === 'development') {
@@ -279,7 +270,7 @@ async function startServer() {
 
     // Graceful shutdown
     const gracefulShutdown = async (signal) => {
-      logger.info(`🛑 ${signal} received, shutting down Rides Automotors API gracefully`);
+      logger.info(`🛑 ${signal} received, shutting down Ridges Automotors API gracefully`);
 
       server.close(async () => {
         try {
@@ -289,7 +280,7 @@ async function startServer() {
           logger.error('❌ Error disconnecting database:', error);
         }
 
-        logger.info('✅ Rides Automotors API process terminated successfully');
+        logger.info('✅ Ridges Automotors API process terminated successfully');
         process.exit(0);
       });
     };

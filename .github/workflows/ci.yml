@@ -168,8 +168,8 @@ jobs:
           push: true
           tags: ${{ steps.tags.outputs.tags }}
           labels: |
-            org.opencontainers.image.title=Rides Automotors API
-            org.opencontainers.image.description=Backend API service for Rides Automotors
+            org.opencontainers.image.title=Ridges Automotors API
+            org.opencontainers.image.description=Backend API service for Ridges Automotors
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
@@ -221,7 +221,7 @@ jobs:
     steps:
       - name: 🎉 Build Success
         run: |
-          echo "🚗 Rides Automotors API successfully built!"
+          echo "🚗 Ridges Automotors API successfully built!"
           echo "🐳 Docker Image: ghcr.io/${{ github.repository }}:latest"
           echo "📦 SHA: ${{ github.sha }}"
           echo "🌟 Ready for deployment!"

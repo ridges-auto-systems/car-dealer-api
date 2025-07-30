@@ -72,7 +72,7 @@ function testEnvironment() {
 
 // Run all tests
 async function runAllTests() {
-  console.log('🚗 Starting Rides Automotors Auth Debug...');
+  console.log('🚗 Starting Ridges Automotors Auth Debug...');
   testEnvironment();
   await testApiConnectivity();
   await testAuth();

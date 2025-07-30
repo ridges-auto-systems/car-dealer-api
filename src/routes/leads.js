@@ -44,7 +44,7 @@ router.post(
         return res.status(400).json({
           success: false,
           errors: errors.array(),
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -121,7 +121,7 @@ router.post(
           return res.status(400).json({
             success: false,
             error: 'Vehicle not found',
-            company: 'Rides Automotors',
+            company: 'Ridges Automotors',
           });
         }
       }
@@ -230,7 +230,7 @@ router.post(
           nextSteps: getNextSteps(lead.priority, lead.timeline),
         },
         message: 'Thank you for your interest! We will contact you soon.',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
         timestamp: new Date().toISOString(),
       });
 
@@ -248,7 +248,7 @@ router.post(
       res.status(500).json({
         success: false,
         error: 'Failed to process your inquiry. Please try again.',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
   }
@@ -365,7 +365,7 @@ router.get(
             totalPages: Math.ceil(total / parseInt(limit, 10)),
           },
         },
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
@@ -373,7 +373,7 @@ router.get(
       res.status(500).json({
         success: false,
         error: 'Failed to fetch leads',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
   }

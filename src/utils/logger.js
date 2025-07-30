@@ -9,8 +9,8 @@ if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
 }
 
-// Custom format for Rides Automotors
-const ridesAutomotorsFormat = winston.format.combine(
+// Custom format for Ridges Automotors
+const RidgesAutomotorsFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.errors({ stack: true }),
   winston.format.printf((info) => {
@@ -21,12 +21,12 @@ const ridesAutomotorsFormat = winston.format.combine(
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
-  format: ridesAutomotorsFormat,
-  defaultMeta: { company: 'Rides Automotors' },
+  format: RidgesAutomotorsFormat,
+  defaultMeta: { company: 'Ridges Automotors' },
   transports: [
     // Console logging with colors
     new winston.transports.Console({
-      format: winston.format.combine(winston.format.colorize(), ridesAutomotorsFormat),
+      format: winston.format.combine(winston.format.colorize(), RidgesAutomotorsFormat),
     }),
 
     // Error log file

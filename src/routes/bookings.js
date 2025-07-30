@@ -48,7 +48,7 @@ const TEST_DRIVE_STATUS = {
 };
 
 // ============================================================================
-// HELPER FUNCTIONS (Moved to top to avoid hoisting issues)
+// HELPER FUNCTIONS
 // ============================================================================
 
 function calculateLeadScore(items) {
@@ -282,7 +282,7 @@ async function processCartItem(tx, item, customer, lead) {
 }
 
 // ============================================================================
-// POST /api/booking/cart-checkout - Process Cart Checkout
+// ROUTES
 // ============================================================================
 
 router.post(
@@ -493,10 +493,6 @@ router.post(
   }
 );
 
-// ============================================================================
-// GET /api/bookings/availability/:vehicleId - Check Vehicle Availability
-// ============================================================================
-
 router.get('/availability/:vehicleId', async (req, res) => {
   try {
     const { vehicleId } = req.params;
@@ -572,10 +568,6 @@ router.get('/availability/:vehicleId', async (req, res) => {
     });
   }
 });
-
-// ============================================================================
-// GET /api/bookings/customer/:customerId - Get Customer Bookings
-// ============================================================================
 
 router.get('/customer/:customerId', async (req, res) => {
   try {
@@ -670,10 +662,6 @@ router.get('/customer/:customerId', async (req, res) => {
     });
   }
 });
-
-// ============================================================================
-// PATCH /api/bookings/appointment/:appointmentId/status - Update Appointment Status
-// ============================================================================
 
 router.patch(
   '/appointment/:appointmentId/status',
@@ -773,10 +761,6 @@ router.patch(
   }
 );
 
-// ============================================================================
-// PATCH /api/bookings/test-drive/:testDriveId/status - Update Test Drive Status
-// ============================================================================
-
 router.patch(
   '/test-drive/:testDriveId/status',
   [
@@ -856,10 +840,9 @@ router.patch(
 );
 
 // ============================================================================
-// CLEANUP JOBS (Run periodically)
+// CLEANUP JOBS
 // ============================================================================
 
-// Expire old reservations
 async function expireOldReservations() {
   try {
     const now = new Date();
@@ -923,6 +906,7 @@ async function expireOldReservations() {
     logger.error('Reservation cleanup error:', error);
   }
 }
+
 // Run cleanup every 30 minutes
 const cleanupInterval = setInterval(expireOldReservations, 30 * 60 * 1000);
 
@@ -939,43 +923,5 @@ process.on('SIGTERM', () => {
   clearInterval(cleanupInterval);
   process.exit(0);
 });
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-function generateConfirmationNumbers() {
-  const timestamp = Date.now().toString().slice(-6);
-  const random = Math.random().toString(36).substring(2, 5).toUpperCase();
-  return `RA${timestamp}${random}`;
-}
-
-async function sendBookingNotification(leadId, bookings) {
-  try {
-    // Here you would implement:
-    // - Send email confirmation to customer
-    // - Send SMS/email notification to sales team
-    // - Create calendar events for test drives
-    // - Send booking details to CRM
-
-    logger.info('Booking notifications sent', {
-      leadId,
-      bookingCount: bookings.length,
-      bookingTypes: bookings.map((b) => b.type),
-    });
-
-    // For now, just log what would be sent
-    logger.info('Notification details', {
-      leadId,
-      bookings: bookings.map((booking) => ({
-        type: booking.type,
-        vehicleInfo: booking.vehicleInfo,
-        scheduledAt: booking.scheduledAt || booking.expiresAt,
-      })),
-    });
-  } catch (error) {
-    logger.error('Notification sending failed:', error);
-    throw error;
-  }
-}
 
 module.exports = router;

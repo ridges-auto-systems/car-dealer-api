@@ -28,7 +28,7 @@ router.post(
         return res.status(400).json({
           success: false,
           errors: errors.array(),
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -52,7 +52,7 @@ router.post(
         return res.status(401).json({
           success: false,
           error: 'Invalid credentials',
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -62,7 +62,7 @@ router.post(
         return res.status(401).json({
           success: false,
           error: 'Invalid credentials',
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -88,7 +88,7 @@ router.post(
           expiresIn: '7 days',
         },
         message: 'Login successful',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
         timestamp: new Date().toISOString(),
       });
 
@@ -102,7 +102,7 @@ router.post(
       res.status(500).json({
         success: false,
         error: 'Login failed',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
   }
@@ -127,7 +127,7 @@ router.post(
         return res.status(400).json({
           success: false,
           errors: errors.array(),
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -142,7 +142,7 @@ router.post(
         return res.status(409).json({
           success: false,
           error: 'User already exists with this email',
-          company: 'Rides Automotors',
+          company: 'Ridges Automotors',
         });
       }
 
@@ -190,7 +190,7 @@ router.post(
           expiresIn: '7 days',
         },
         message: 'Registration successful',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
         timestamp: new Date().toISOString(),
       });
 
@@ -203,7 +203,7 @@ router.post(
       res.status(500).json({
         success: false,
         error: 'Registration failed',
-        company: 'Rides Automotors',
+        company: 'Ridges Automotors',
       });
     }
   }
@@ -220,7 +220,7 @@ router.get('/me', auth, async (req, res) => {
       data: {
         user: req.user,
       },
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -228,7 +228,7 @@ router.get('/me', auth, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to get user profile',
-      company: 'Rides Automotors',
+      company: 'Ridges Automotors',
     });
   }
 });

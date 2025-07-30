@@ -5,7 +5,7 @@ const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
-  // Log error with Rides Automotors context
+  // Log error with Ridges Automotors context
   logger.error('API Error occurred', {
     error: err.message,
     stack: err.stack,
@@ -13,7 +13,7 @@ const errorHandler = (err, req, res, next) => {
     method: req.method,
     ip: req.ip,
     userAgent: req.get('User-Agent'),
-    company: 'Rides Automotors',
+    company: 'Ridges Automotors',
     timestamp: new Date().toISOString(),
   });
 
@@ -98,7 +98,7 @@ const errorHandler = (err, req, res, next) => {
   const errorResponse = {
     success: false,
     error: error.message || 'Internal Server Error',
-    company: 'Rides Automotors',
+    company: 'Ridges Automotors',
     timestamp: new Date().toISOString(),
     requestId: req.id || 'unknown',
   };
