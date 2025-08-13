@@ -212,6 +212,7 @@ app.get('/', (req, res) => {
       stats: '/api/stats',
       health: '/health',
       company: '/api/company',
+      dashboard: '/api/dashboard',
     },
     contact: {
       email: process.env.COMPANY_EMAIL || 'info@Ridgesautomotors.com',
@@ -234,7 +235,7 @@ app.use('*', (req, res) => {
     method: req.method,
     company: 'Ridges Automotors',
     message: 'The requested endpoint does not exist.',
-    availableEndpoints: ['/api/vehicles', '/api/leads', '/health', '/api/stats'],
+    availableEndpoints: ['/api/vehicles', '/api/leads', '/health', '/api/stats', '/api/dashboard'],
   });
 });
 
@@ -264,6 +265,7 @@ async function startServer() {
           vehicles: `http://localhost:${PORT}/api/vehicles`,
           health: `http://localhost:${PORT}/health`,
           stats: `http://localhost:${PORT}/api/stats`,
+          dashboard: `http://localhost:${PORT}/api/dashboard`,
         });
       }
     });
