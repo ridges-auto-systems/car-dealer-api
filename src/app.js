@@ -213,6 +213,7 @@ app.get('/', (req, res) => {
       health: '/health',
       company: '/api/company',
       dashboard: '/api/dashboard',
+      sales: '/api/sales',
     },
     contact: {
       email: process.env.COMPANY_EMAIL || 'info@Ridgesautomotors.com',
@@ -242,6 +243,7 @@ app.use('*', (req, res) => {
       '/api/stats',
       '/api/dashboard',
       '/api/reports',
+      '/api/sales',
     ],
   });
 });
@@ -274,6 +276,7 @@ async function startServer() {
           stats: `http://localhost:${PORT}/api/stats`,
           dashboard: `http://localhost:${PORT}/api/dashboard`,
           reports: `http://localhost:${PORT}/api/reports`,
+          sales: `http://localhost:${PORT}/api/sales`,
         });
       }
     });

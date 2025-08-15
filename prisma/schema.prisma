@@ -37,6 +37,7 @@ model User {
   testDrives          TestDrive[]
   financingApps       FinancingApplication[]
   communications      Communication[]
+  soldVehicles        Vehicle[]            @relation("SoldByUser")
 
   @@map("users")
 }
@@ -122,6 +123,8 @@ model Vehicle {
   isActive         Boolean  @default(true)
   soldDate         DateTime?
   soldPrice        Decimal?
+  soldByUserId     String?
+  soldBy           User?    @relation("SoldByUser", fields: [soldByUserId], references: [id])
   
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
