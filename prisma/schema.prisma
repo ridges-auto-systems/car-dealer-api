@@ -266,4 +266,5 @@ enum UserRole {
   SALES_REP
   CUSTOMER
   MANAGER
+  SUPER_ADMIN
 }

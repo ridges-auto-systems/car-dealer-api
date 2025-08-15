@@ -206,14 +206,7 @@ router.post(
     body('firstName').trim().notEmpty().withMessage('First name is required'),
     body('lastName').trim().notEmpty().withMessage('Last name is required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    body('role').isIn([
-      'CUSTOMER',
-      'SALES_REP',
-      'SALES_MANAGER',
-      'FINANCE_MANAGER',
-      'ADMIN',
-      'SUPER_ADMIN',
-    ]),
+    body('role').isIn(['CUSTOMER', 'SALES_REP', 'MANAGER', 'ADMIN', 'SUPER_ADMIN']),
     body('phone').optional().isMobilePhone().withMessage('Valid phone number required'),
   ],
   async (req, res) => {
@@ -323,9 +316,7 @@ router.put(
     body('email').optional().isEmail().normalizeEmail(),
     body('firstName').optional().trim().notEmpty(),
     body('lastName').optional().trim().notEmpty(),
-    body('role')
-      .optional()
-      .isIn(['CUSTOMER', 'SALES_REP', 'SALES_MANAGER', 'FINANCE_MANAGER', 'ADMIN', 'SUPER_ADMIN']),
+    body('role').optional().isIn(['CUSTOMER', 'SALES_REP', 'MANAGER', 'ADMIN', 'SUPER_ADMIN']),
     body('phone').optional().isMobilePhone(),
   ],
   async (req, res) => {
@@ -476,11 +467,10 @@ router.patch(
 function getRoleBadge(role) {
   const badges = {
     CUSTOMER: { color: 'blue', text: '👤 Customer' },
-    SALES_REP: { color: 'green', text: '🤝 Sales Rep' },
-    SALES_MANAGER: { color: 'purple', text: '👨‍💼 Sales Manager' },
-    FINANCE_MANAGER: { color: 'orange', text: '💰 Finance Manager' },
-    ADMIN: { color: 'red', text: '⚡ Admin' },
-    SUPER_ADMIN: { color: 'black', text: '🛡️ Super Admin' },
+    SALES_REP: { color: 'green', text: 'Sales Rep' },
+    MANAGER: { color: 'purple', text: 'Manager' },
+    ADMIN: { color: 'red', text: 'Admin' },
+    SUPER_ADMIN: { color: 'black', text: 'Super Admin' },
   };
 
   return badges[role] || badges.CUSTOMER;
